@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type NewsItem = {
   id: string;
@@ -17,8 +18,6 @@ export const generateXml = (items: NewsItem[]) => {
     return acc;
   }, {} as Record<string, NewsItem[]>);
 
-  // In a real application, this would be handled by the backend
-  // This is just a demonstration of the structure
   const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
     <news>
       ${Object.entries(groupedItems)
@@ -41,25 +40,50 @@ export const generateXml = (items: NewsItem[]) => {
         .join("")}
     </news>`;
 
-  // In a real application, this would send the XML to the backend
-  console.log(xmlContent);
   return xmlContent;
 };
 
 export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
   const { toast } = useToast();
+  const { language } = useLanguage();
 
-  const handleGenerateXml = () => {
-    generateXml(items);
-    toast({
-      title: "تم إنشاء ملف XML",
-      description: "تم إنشاء ملف XML بنجاح",
-    });
+  const handleGenerateXml = async () => {
+    const xmlContent = generateXml(items);
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/save-xml', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ xml: xmlContent }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save XML');
+      }
+
+      const data = await response.json();
+      toast({
+        title: language === 'ar' ? "تم إنشاء ملف XML" : "XML File Created",
+        description: language === 'ar' 
+          ? `تم حفظ الملف: ${data.filename}` 
+          : `File saved: ${data.filename}`,
+      });
+    } catch (error) {
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: language === 'ar' 
+          ? "فشل في حفظ ملف XML" 
+          : "Failed to save XML file",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <Button onClick={handleGenerateXml} className="w-full" variant="secondary">
-      توليد ملف XML
+      {language === 'ar' ? 'توليد ملف XML' : 'Generate XML'}
     </Button>
   );
 };
