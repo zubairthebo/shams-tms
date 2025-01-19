@@ -8,21 +8,18 @@ type NewsItem = {
   timestamp: Date;
 };
 
-export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
-  const { toast } = useToast();
+export const generateXml = (items: NewsItem[]) => {
+  const groupedItems = items.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {} as Record<string, NewsItem[]>);
 
-  const generateXml = () => {
-    const groupedItems = items.reduce((acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      acc[item.category].push(item);
-      return acc;
-    }, {} as Record<string, NewsItem[]>);
-
-    // In a real application, this would be handled by the backend
-    // This is just a demonstration of the structure
-    const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+  // In a real application, this would be handled by the backend
+  // This is just a demonstration of the structure
+  const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
     <news>
       ${Object.entries(groupedItems)
         .map(
@@ -44,8 +41,16 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
         .join("")}
     </news>`;
 
-    // In a real application, this would send the XML to the backend
-    console.log(xmlContent);
+  // In a real application, this would send the XML to the backend
+  console.log(xmlContent);
+  return xmlContent;
+};
+
+export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
+  const { toast } = useToast();
+
+  const handleGenerateXml = () => {
+    generateXml(items);
     toast({
       title: "تم إنشاء ملف XML",
       description: "تم إنشاء ملف XML بنجاح",
@@ -53,7 +58,7 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
   };
 
   return (
-    <Button onClick={generateXml} className="w-full" variant="secondary">
+    <Button onClick={handleGenerateXml} className="w-full" variant="secondary">
       توليد ملف XML
     </Button>
   );

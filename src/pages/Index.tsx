@@ -17,7 +17,7 @@ const Index = () => {
       timestamp: new Date(),
     };
     setNewsItems((prev) => [...prev, newItem]);
-    // Trigger XML generation silently
+    // Generate XML silently
     const xmlGenerator = new XmlGenerator({ items: [...newsItems, newItem] });
     xmlGenerator.generateXml();
   };
