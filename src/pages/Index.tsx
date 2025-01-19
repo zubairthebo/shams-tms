@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NewsForm } from "@/components/NewsForm";
 import { NewsList } from "@/components/NewsList";
-import { XmlGenerator } from "@/components/XmlGenerator";
+import { XmlGenerator, generateXml } from "@/components/XmlGenerator";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { NewsItem } from "@/types";
@@ -18,8 +18,7 @@ const Index = () => {
     };
     setNewsItems((prev) => [...prev, newItem]);
     // Generate XML silently
-    const xmlGenerator = new XmlGenerator({ items: [...newsItems, newItem] });
-    xmlGenerator.generateXml();
+    generateXml([...newsItems, newItem]);
   };
 
   const handleDeleteNews = (id: string) => {
