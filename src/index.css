@@ -21,3 +21,12 @@
 .rtl {
   direction: rtl;
 }
+
+/* Add styles for the Select component */
+[data-radix-popper-content-wrapper] {
+  @apply bg-white dark:bg-gray-800 shadow-lg !important;
+}
+
+.select-content {
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 !important;
+}

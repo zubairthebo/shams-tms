@@ -48,10 +48,10 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
           {language === 'ar' ? 'الفئة' : 'Category'}
         </label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger>
+          <SelectTrigger className="bg-white dark:bg-gray-800">
             <SelectValue placeholder={language === 'ar' ? "اختر الفئة" : "Select category"} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="select-content">
             {Object.entries(categories).map(([id, labels]) => (
               <SelectItem key={id} value={id}>
                 {labels[language]}

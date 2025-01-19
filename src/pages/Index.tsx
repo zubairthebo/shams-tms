@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NewsForm } from "@/components/NewsForm";
 import { NewsList } from "@/components/NewsList";
-import { XmlGenerator, generateXml } from "@/components/XmlGenerator";
+import { generateXml } from "@/components/XmlGenerator";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { NewsItem } from "@/types";
@@ -10,19 +10,37 @@ const Index = () => {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const { language, setLanguage } = useLanguage();
 
+  // Load news items from localStorage on component mount
+  useEffect(() => {
+    const savedNews = localStorage.getItem('newsItems');
+    if (savedNews) {
+      const parsedNews = JSON.parse(savedNews).map((item: any) => ({
+        ...item,
+        timestamp: new Date(item.timestamp)
+      }));
+      setNewsItems(parsedNews);
+    }
+  }, []);
+
   const handleNewsSubmit = (data: { text: string; category: string }) => {
     const newItem: NewsItem = {
       id: crypto.randomUUID(),
       ...data,
       timestamp: new Date(),
     };
-    setNewsItems((prev) => [...prev, newItem]);
+    const updatedNews = [...newsItems, newItem];
+    setNewsItems(updatedNews);
+    // Save to localStorage
+    localStorage.setItem('newsItems', JSON.stringify(updatedNews));
     // Generate XML silently
-    generateXml([...newsItems, newItem]);
+    generateXml(updatedNews);
   };
 
   const handleDeleteNews = (id: string) => {
-    setNewsItems((prev) => prev.filter(item => item.id !== id));
+    const updatedNews = newsItems.filter(item => item.id !== id);
+    setNewsItems(updatedNews);
+    // Update localStorage
+    localStorage.setItem('newsItems', JSON.stringify(updatedNews));
   };
 
   return (
