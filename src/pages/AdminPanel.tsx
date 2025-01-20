@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,10 @@ const AdminPanel = () => {
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [newCategoryId, setNewCategoryId] = useState("");
+  const [newCategoryNameAr, setNewCategoryNameAr] = useState("");
+  const [newCategoryNameEn, setNewCategoryNameEn] = useState("");
 
   if (user?.role !== 'admin') {
     return <div>Access Denied</div>;
@@ -32,7 +37,8 @@ const AdminPanel = () => {
         body: JSON.stringify({
           username: newUsername,
           password: newPassword,
-          assignedCategories: selectedCategories
+          assignedCategories: selectedCategories,
+          role: isAdmin ? 'admin' : 'user'
         }),
       });
 
@@ -48,6 +54,7 @@ const AdminPanel = () => {
       setNewUsername("");
       setNewPassword("");
       setSelectedCategories([]);
+      setIsAdmin(false);
     } catch (error) {
       toast({
         title: language === 'ar' ? "خطأ" : "Error",
@@ -65,11 +72,27 @@ const AdminPanel = () => {
     );
   };
 
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Add category implementation
+    toast({
+      title: language === 'ar' ? "قريباً" : "Coming Soon",
+      description: language === 'ar' ? "سيتم إضافة هذه الميزة قريباً" : "This feature will be added soon",
+    });
+  };
+
   return (
     <div className="container py-8">
-      <h1 className={`text-3xl font-bold mb-8 ${language === 'ar' ? 'rtl' : 'ltr'}`}>
-        {language === 'ar' ? 'لوحة الإدارة' : 'Admin Panel'}
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className={`text-3xl font-bold ${language === 'ar' ? 'rtl' : 'ltr'}`}>
+          {language === 'ar' ? 'لوحة الإدارة' : 'Admin Panel'}
+        </h1>
+        <Link to="/">
+          <Button variant="outline">
+            {language === 'ar' ? 'العودة إلى لوحة التحكم' : 'Back to Dashboard'}
+          </Button>
+        </Link>
+      </div>
       <Tabs defaultValue="users">
         <TabsList>
           <TabsTrigger value="users">
@@ -110,6 +133,17 @@ const AdminPanel = () => {
                   />
                 </div>
                 <div>
+                  <label className="flex items-center space-x-2 mb-2">
+                    <input
+                      type="checkbox"
+                      checked={isAdmin}
+                      onChange={(e) => setIsAdmin(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <span>{language === 'ar' ? 'مسؤول النظام' : 'Admin User'}</span>
+                  </label>
+                </div>
+                <div>
                   <label className="block text-sm font-medium mb-2">
                     {language === 'ar' ? 'الفئات المسموح بها' : 'Assigned Categories'}
                   </label>
@@ -142,11 +176,44 @@ const AdminPanel = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {language === 'ar' 
-                  ? 'إدارة الفئات قيد التطوير' 
-                  : 'Category management is under development'}
-              </p>
+              <form onSubmit={handleAddCategory} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    {language === 'ar' ? 'معرف الفئة' : 'Category ID'}
+                  </label>
+                  <Input
+                    value={newCategoryId}
+                    onChange={(e) => setNewCategoryId(e.target.value)}
+                    required
+                    placeholder="e.g., sports"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    {language === 'ar' ? 'اسم الفئة (عربي)' : 'Category Name (Arabic)'}
+                  </label>
+                  <Input
+                    value={newCategoryNameAr}
+                    onChange={(e) => setNewCategoryNameAr(e.target.value)}
+                    required
+                    placeholder="e.g., رياضة"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    {language === 'ar' ? 'اسم الفئة (إنجليزي)' : 'Category Name (English)'}
+                  </label>
+                  <Input
+                    value={newCategoryNameEn}
+                    onChange={(e) => setNewCategoryNameEn(e.target.value)}
+                    required
+                    placeholder="e.g., Sports"
+                  />
+                </div>
+                <Button type="submit">
+                  {language === 'ar' ? 'إضافة فئة' : 'Add Category'}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
