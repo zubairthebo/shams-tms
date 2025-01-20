@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import AdminPanel from "./pages/AdminPanel";
@@ -43,32 +44,34 @@ const App = () => (
                     <Toaster />
                     <Sonner />
                     <BrowserRouter>
-                        <Routes>
-                            <Route 
-                                path="/login" 
-                                element={
-                                    <PublicRoute>
-                                        <Login />
-                                    </PublicRoute>
-                                } 
-                            />
-                            <Route
-                                path="/"
-                                element={
-                                    <ProtectedRoute>
-                                        <Dashboard />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/admin"
-                                element={
-                                    <AdminRoute>
-                                        <AdminPanel />
-                                    </AdminRoute>
-                                }
-                            />
-                        </Routes>
+                        <Layout>
+                            <Routes>
+                                <Route 
+                                    path="/login" 
+                                    element={
+                                        <PublicRoute>
+                                            <Login />
+                                        </PublicRoute>
+                                    } 
+                                />
+                                <Route
+                                    path="/"
+                                    element={
+                                        <ProtectedRoute>
+                                            <Dashboard />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/admin"
+                                    element={
+                                        <AdminRoute>
+                                            <AdminPanel />
+                                        </AdminRoute>
+                                    }
+                                />
+                            </Routes>
+                        </Layout>
                     </BrowserRouter>
                 </TooltipProvider>
             </LanguageProvider>

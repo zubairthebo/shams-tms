@@ -18,11 +18,10 @@ export const generateXml = (items: NewsItem[]) => {
     return acc;
   }, {} as Record<string, NewsItem[]>);
 
-  const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-    <news>
-      ${Object.entries(groupedItems)
-        .map(
-          ([category, news]) => `
+  // Generate separate XML files for each category
+  Object.entries(groupedItems).forEach(async ([category, news]) => {
+    const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+      <news>
         <category name="${category}">
           ${news
             .map(
@@ -35,12 +34,25 @@ export const generateXml = (items: NewsItem[]) => {
             )
             .join("")}
         </category>
-      `
-        )
-        .join("")}
-    </news>`;
+      </news>`;
 
-  return xmlContent;
+    try {
+      await fetch('http://localhost:3000/api/save-xml', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ 
+          xml: xmlContent,
+          category,
+          filename: `${category}.xml`
+        }),
+      });
+    } catch (error) {
+      console.error('Error saving XML:', error);
+    }
+  });
 };
 
 export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
@@ -48,42 +60,19 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
   const { language } = useLanguage();
 
   const handleGenerateXml = async () => {
-    const xmlContent = generateXml(items);
+    generateXml(items);
     
-    try {
-      const response = await fetch('http://localhost:3000/api/save-xml', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ xml: xmlContent }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save XML');
-      }
-
-      const data = await response.json();
-      toast({
-        title: language === 'ar' ? "تم إنشاء ملف XML" : "XML File Created",
-        description: language === 'ar' 
-          ? `تم حفظ الملف: ${data.filename}` 
-          : `File saved: ${data.filename}`,
-      });
-    } catch (error) {
-      toast({
-        title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' 
-          ? "فشل في حفظ ملف XML" 
-          : "Failed to save XML file",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: language === 'ar' ? "تم إنشاء ملفات XML" : "XML Files Created",
+      description: language === 'ar' 
+        ? `تم حفظ الملفات بنجاح` 
+        : `Files saved successfully`,
+    });
   };
 
   return (
     <Button onClick={handleGenerateXml} className="w-full" variant="secondary">
-      {language === 'ar' ? 'توليد ملف XML' : 'Generate XML'}
+      {language === 'ar' ? 'توليد ملفات XML' : 'Generate XML Files'}
     </Button>
   );
 };

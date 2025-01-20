@@ -12,6 +12,7 @@ app.use(express.json());
 const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
 const USERS_FILE = path.join(__dirname, 'data', 'users.json');
 const XML_DIR = path.join(__dirname, 'xml');
+const CATEGORIES_FILE = path.join(__dirname, 'data', 'categories.json');
 
 // Ensure directories exist
 [XML_DIR, path.dirname(USERS_FILE)].forEach(dir => {
@@ -29,6 +30,17 @@ if (!fs.existsSync(USERS_FILE)) {
         assignedCategories: []
     };
     fs.writeFileSync(USERS_FILE, JSON.stringify({ users: [defaultAdmin] }));
+}
+
+// Initialize categories.json if it doesn't exist
+if (!fs.existsSync(CATEGORIES_FILE)) {
+    const defaultCategories = {
+        politics: { ar: 'سياسة', en: 'Politics' },
+        sports: { ar: 'رياضة', en: 'Sports' },
+        economy: { ar: 'اقتصاد', en: 'Economy' },
+        technology: { ar: 'تكنولوجيا', en: 'Technology' }
+    };
+    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(defaultCategories));
 }
 
 // Middleware to verify JWT token
@@ -107,6 +119,50 @@ app.post('/api/users', authenticateToken, (req, res) => {
     res.json({ message: 'User created successfully' });
 });
 
+// Update user endpoint
+app.put('/api/users/:username', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { username } = req.params;
+    const { password, assignedCategories, role } = req.body;
+    
+    const userData = JSON.parse(fs.readFileSync(USERS_FILE));
+    const userIndex = userData.users.findIndex(u => u.username === username);
+    
+    if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (password) {
+        userData.users[userIndex].password = bcrypt.hashSync(password, 10);
+    }
+    
+    if (assignedCategories) {
+        userData.users[userIndex].assignedCategories = assignedCategories;
+    }
+    
+    if (role) {
+        userData.users[userIndex].role = role;
+    }
+
+    fs.writeFileSync(USERS_FILE, JSON.stringify(userData));
+    res.json({ message: 'User updated successfully' });
+});
+
+// Get all users endpoint
+app.get('/api/users', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const userData = JSON.parse(fs.readFileSync(USERS_FILE));
+    // Remove password hashes from response
+    const sanitizedUsers = userData.users.map(({ password, ...user }) => user);
+    res.json(sanitizedUsers);
+});
+
 // Save XML when news is submitted
 app.post('/api/save-xml', authenticateToken, (req, res) => {
     const { xml, category } = req.body;
@@ -117,7 +173,7 @@ app.post('/api/save-xml', authenticateToken, (req, res) => {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `news_${timestamp}.xml`;
+    const filename = `${category}.xml`;
     const filepath = path.join(XML_DIR, filename);
 
     fs.writeFile(filepath, xml, (err) => {
@@ -128,6 +184,46 @@ app.post('/api/save-xml', authenticateToken, (req, res) => {
         }
         res.json({ message: 'XML saved successfully', filename });
     });
+});
+
+// Get categories
+app.get('/api/categories', (req, res) => {
+    const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE));
+    res.json(categories);
+});
+
+// Add/Update category
+app.put('/api/categories/:id', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+    const { ar, en } = req.body;
+    
+    const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE));
+    categories[id] = { ar, en };
+    
+    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories));
+    res.json({ message: 'Category updated successfully' });
+});
+
+// Delete category
+app.delete('/api/categories/:id', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+    const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE));
+    
+    if (!categories[id]) {
+        return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    delete categories[id];
+    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories));
+    res.json({ message: 'Category deleted successfully' });
 });
 
 const PORT = 3000;
