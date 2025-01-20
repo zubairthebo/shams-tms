@@ -48,10 +48,16 @@ const authenticateToken = (req, res, next) => {
 // Login endpoint
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    const users = JSON.parse(fs.readFileSync(USERS_FILE)).users;
-    const user = users.find(u => u.username === username);
+    console.log('Login attempt:', { username }); // Add logging
+
+    // Read users from file
+    const userData = JSON.parse(fs.readFileSync(USERS_FILE));
+    const user = userData.users.find(u => u.username === username);
+    
+    console.log('User found:', user ? 'yes' : 'no'); // Add logging
 
     if (!user || !bcrypt.compareSync(password, user.password)) {
+        console.log('Login failed: Invalid credentials'); // Add logging
         return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -64,11 +70,15 @@ app.post('/api/login', (req, res) => {
         JWT_SECRET
     );
 
-    res.json({ token, user: { 
-        username: user.username, 
-        role: user.role,
-        assignedCategories: user.assignedCategories 
-    }});
+    console.log('Login successful'); // Add logging
+    res.json({ 
+        token, 
+        user: { 
+            username: user.username, 
+            role: user.role,
+            assignedCategories: user.assignedCategories 
+        }
+    });
 });
 
 // Admin endpoint to manage users

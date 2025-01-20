@@ -18,9 +18,10 @@ const Login = () => {
             await login(username, password);
             navigate('/');
         } catch (error) {
+            console.error('Login error:', error); // Add logging
             toast({
                 title: 'Error',
-                description: 'Invalid credentials',
+                description: 'Invalid credentials. Please try again.',
                 variant: 'destructive',
             });
         }
