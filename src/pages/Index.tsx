@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { NewsForm } from "@/components/NewsForm";
 import { NewsList } from "@/components/NewsList";
 import { generateXml } from "@/components/XmlGenerator";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import type { NewsItem } from "@/types";
 
 const Index = () => {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const { language, setLanguage } = useLanguage();
+  const { user } = useAuth();
 
-  // Load news items from localStorage on component mount
   useEffect(() => {
     const savedNews = localStorage.getItem('newsItems');
     if (savedNews) {
@@ -30,23 +32,29 @@ const Index = () => {
     };
     const updatedNews = [...newsItems, newItem];
     setNewsItems(updatedNews);
-    // Save to localStorage
     localStorage.setItem('newsItems', JSON.stringify(updatedNews));
-    // Generate XML silently
     generateXml(updatedNews);
   };
 
   const handleDeleteNews = (id: string) => {
     const updatedNews = newsItems.filter(item => item.id !== id);
     setNewsItems(updatedNews);
-    // Update localStorage
     localStorage.setItem('newsItems', JSON.stringify(updatedNews));
   };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container py-8">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center space-x-4">
+            {user?.role === 'admin' && (
+              <Link to="/admin">
+                <Button variant="outline">
+                  {language === 'ar' ? 'لوحة الإدارة' : 'Admin Panel'}
+                </Button>
+              </Link>
+            )}
+          </div>
           <Button
             variant="outline"
             onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}

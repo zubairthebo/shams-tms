@@ -7,10 +7,18 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import AdminPanel from "./pages/AdminPanel";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
     return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+};
+
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+    const { isAuthenticated, user } = useAuth();
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    if (user?.role !== 'admin') return <Navigate to="/" />;
+    return <>{children}</>;
 };
 
 const queryClient = new QueryClient();
@@ -31,6 +39,14 @@ const App = () => (
                                     <ProtectedRoute>
                                         <Index />
                                     </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/admin"
+                                element={
+                                    <AdminRoute>
+                                        <AdminPanel />
+                                    </AdminRoute>
                                 }
                             />
                         </Routes>
