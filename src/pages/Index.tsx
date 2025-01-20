@@ -42,6 +42,17 @@ const Index = () => {
     localStorage.setItem('newsItems', JSON.stringify(updatedNews));
   };
 
+  const handleEditNews = (id: string, newText: string) => {
+    const updatedNews = newsItems.map(item => {
+      if (item.id === id) {
+        return { ...item, text: newText };
+      }
+      return item;
+    });
+    setNewsItems(updatedNews);
+    localStorage.setItem('newsItems', JSON.stringify(updatedNews));
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container py-8">
@@ -70,7 +81,11 @@ const Index = () => {
             <NewsForm onSubmit={handleNewsSubmit} />
           </div>
           <div>
-            <NewsList items={newsItems} onDelete={handleDeleteNews} />
+            <NewsList 
+              items={newsItems} 
+              onDelete={handleDeleteNews} 
+              onEdit={handleEditNews}
+            />
           </div>
         </div>
       </div>
