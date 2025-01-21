@@ -34,7 +34,7 @@ export default {
         },
       },
       fontFamily: {
-        arabic: ["Noto Sans Arabic", "sans-serif"],
+        shams: ["Shams Medium", "Noto Sans Arabic", "sans-serif"],
       },
     },
   },

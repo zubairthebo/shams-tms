@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { categories } from "@/types";
 import { generateXml } from "./XmlGenerator";
 
+const MAX_CHARS = 75;
+
 export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; category: string }) => void }) => {
     const [text, setText] = useState("");
     const [category, setCategory] = useState("");
@@ -26,7 +28,15 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
             return;
         }
 
-        // Check if user has permission for this category
+        if (text.length > MAX_CHARS) {
+            toast({
+                title: language === 'ar' ? "خطأ" : "Error",
+                description: language === 'ar' ? "النص يتجاوز الحد الأقصى المسموح به" : "Text exceeds maximum allowed length",
+                variant: "destructive",
+            });
+            return;
+        }
+
         if (user?.role !== 'admin' && !user?.assignedCategories.includes(category)) {
             toast({
                 title: language === 'ar' ? "خطأ" : "Error",
@@ -40,7 +50,6 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
             onSubmit({ text, category });
             setText("");
 
-            // Generate and save XML
             const xml = generateXml([{ id: crypto.randomUUID(), text, category, timestamp: new Date() }]);
             const token = localStorage.getItem('token');
 
@@ -70,7 +79,6 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
         }
     };
 
-    // Filter categories based on user role and permissions
     const availableCategories = user?.role === 'admin' 
         ? categories 
         : Object.entries(categories).reduce((acc, [id, labels]) => {
@@ -79,6 +87,8 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
             }
             return acc;
         }, {} as typeof categories);
+
+    const isOverLimit = text.length > MAX_CHARS;
 
     return (
         <form onSubmit={handleSubmit} className={`space-y-4 ${language === 'ar' ? 'rtl' : 'ltr'}`}>
@@ -92,6 +102,9 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
                     className={language === 'ar' ? 'text-right' : 'text-left'}
                     placeholder={language === 'ar' ? "أدخل نص الخبر هنا" : "Enter news text here"}
                 />
+                <div className={`text-sm ${isOverLimit ? 'text-red-500' : 'text-black'}`}>
+                    {text.length}/{MAX_CHARS}
+                </div>
             </div>
             <div className="space-y-2">
                 <label className="block text-sm font-medium">

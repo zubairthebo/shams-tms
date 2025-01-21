@@ -14,12 +14,22 @@ export const Footer = () => {
               : `© ${currentYear} ShamsTV. All rights reserved`
             }
           </p>
-          <p className="text-gray-500 mt-2">
-            {language === 'ar'
-              ? 'للتواصل: support@shamstv.com'
-              : 'Contact: support@shamstv.com'
-            }
-          </p>
+          <div className="text-gray-500 mt-2">
+            <p>
+              {language === 'ar'
+                ? 'للتواصل: zubair@shams.tv'
+                : 'Contact: zubair@shams.tv'
+              }
+            </p>
+            <a 
+              href="https://shams.tv" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              www.shams.tv
+            </a>
+          </div>
         </div>
       </div>
     </footer>
