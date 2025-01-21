@@ -14,8 +14,38 @@ export const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json');
 export const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 
 // Ensure directories exist
-[XML_DIR, DATA_DIR].forEach(dir => {
+[DATA_DIR, XML_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
 });
+
+// Initialize users.json if it doesn't exist
+if (!fs.existsSync(USERS_FILE)) {
+    const initialUsers = {
+        users: [
+            {
+                username: 'admin',
+                // Default password is 'admin123'
+                password: '$2a$10$zGqHJj7SKvU/BzQe5Xc7n.7vFqE3Qc3/p1fIHYwF0c7UyV7NFWqPe',
+                role: 'admin',
+                assignedCategories: []
+            }
+        ]
+    };
+    fs.writeFileSync(USERS_FILE, JSON.stringify(initialUsers, null, 2));
+}
+
+// Initialize categories.json if it doesn't exist
+if (!fs.existsSync(CATEGORIES_FILE)) {
+    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify({ categories: [] }, null, 2));
+}
+
+// Initialize settings.json if it doesn't exist
+if (!fs.existsSync(SETTINGS_FILE)) {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify({
+        companyName: 'Default Company',
+        logo: '',
+        favicon: ''
+    }, null, 2));
+}
