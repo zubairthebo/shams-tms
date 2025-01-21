@@ -243,8 +243,13 @@ app.delete('/api/categories/:id', authenticateToken, (req, res) => {
 
 // Get settings
 app.get('/api/settings', (req, res) => {
-    const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE));
-    res.json(settings);
+    try {
+        const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE));
+        res.json(settings);
+    } catch (error) {
+        console.error('Error reading settings:', error);
+        res.status(500).json({ error: 'Failed to read settings' });
+    }
 });
 
 // Update settings
@@ -253,9 +258,14 @@ app.put('/api/settings', authenticateToken, (req, res) => {
         return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const settings = req.body;
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings));
-    res.json({ message: 'Settings updated successfully' });
+    try {
+        const settings = req.body;
+        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings));
+        res.json({ message: 'Settings updated successfully' });
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        res.status(500).json({ error: 'Failed to update settings' });
+    }
 });
 
 const PORT = 3000;
