@@ -1,6 +1,6 @@
-const fs = require('fs');
-const path = require('path');
-const { XML_DIR } = require('./config');
+import fs from 'fs';
+import path from 'path';
+import { XML_DIR } from './config.js';
 
 const generateRSS2 = (items, category) => {
     const now = new Date().toUTCString();
@@ -25,7 +25,7 @@ const generateRSS2 = (items, category) => {
 </rss>`;
 };
 
-const saveXML = (req, res) => {
+export const saveXML = (req, res) => {
     const { xml, category } = req.body;
     
     if (req.user.role !== 'admin' && !req.user.assignedCategories.includes(category)) {
@@ -50,8 +50,4 @@ const saveXML = (req, res) => {
         }
         res.json({ message: 'XML saved successfully', filename });
     });
-};
-
-module.exports = {
-    saveXML
 };

@@ -1,9 +1,9 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const fs = require('fs');
-const { JWT_SECRET, USERS_FILE } = require('./config');
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import { JWT_SECRET, USERS_FILE } from './config.js';
 
-const authenticateToken = (req, res, next) => {
+export const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -16,7 +16,7 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-const handleLogin = (req, res) => {
+export const handleLogin = (req, res) => {
     const { username, password } = req.body;
     console.log('Login attempt:', { username });
 
@@ -46,9 +46,4 @@ const handleLogin = (req, res) => {
             assignedCategories: user.assignedCategories 
         }
     });
-};
-
-module.exports = {
-    authenticateToken,
-    handleLogin
 };

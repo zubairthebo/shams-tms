@@ -1,11 +1,17 @@
-const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
-const { authenticateToken, handleLogin } = require('./src/server/auth');
-const { saveXML } = require('./src/server/xmlGenerator');
-const { USERS_FILE, CATEGORIES_FILE, SETTINGS_FILE } = require('./src/server/config');
-const fs = require('fs');
+import express from 'express';
+import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { authenticateToken, handleLogin } from './src/server/auth.js';
+import { saveXML } from './src/server/xmlGenerator.js';
+import { USERS_FILE, CATEGORIES_FILE, SETTINGS_FILE } from './src/server/config.js';
+import fs from 'fs';
+import bcrypt from 'bcryptjs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 app.use(cors());

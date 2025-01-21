@@ -1,12 +1,16 @@
-const path = require('path');
-const fs = require('fs');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
-const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
-const XML_DIR = path.join(__dirname, '..', '..', 'xml');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json');
-const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
+export const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+export const XML_DIR = path.join(__dirname, '..', '..', 'xml');
+export const USERS_FILE = path.join(DATA_DIR, 'users.json');
+export const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json');
+export const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 
 // Ensure directories exist
 [XML_DIR, DATA_DIR].forEach(dir => {
@@ -14,11 +18,3 @@ const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
         fs.mkdirSync(dir, { recursive: true });
     }
 });
-
-module.exports = {
-    JWT_SECRET,
-    XML_DIR,
-    USERS_FILE,
-    CATEGORIES_FILE,
-    SETTINGS_FILE
-};
