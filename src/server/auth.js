@@ -26,8 +26,7 @@ export const handleLogin = (req, res) => {
             const defaultUsers = {
                 users: [{
                     username: 'admin',
-                    // Default password: admin123
-                    password: '$2a$10$zGqHJj7SKvU/BzQe5Xc7n.7vFqE3Qc3/p1fIHYwF0c7UyV7NFWqPe',
+                    password: bcrypt.hashSync('admin123', 10),
                     role: 'admin',
                     assignedCategories: []
                 }]
@@ -38,8 +37,14 @@ export const handleLogin = (req, res) => {
         const userData = JSON.parse(fs.readFileSync(USERS_FILE));
         const user = userData.users.find(u => u.username === username);
         
-        if (!user || !bcrypt.compareSync(password, user.password)) {
-            console.log('Login failed: Invalid credentials');
+        if (!user) {
+            console.log('Login failed: User not found');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const isValidPassword = bcrypt.compareSync(password, user.password);
+        if (!isValidPassword) {
+            console.log('Login failed: Invalid password');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 

@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,18 +24,16 @@ export const UPLOADS_DIR = path.join(__dirname, '..', '..', 'public', 'uploads')
 
 // Initialize users.json if it doesn't exist
 if (!fs.existsSync(USERS_FILE)) {
-    const initialUsers = {
-        users: [
-            {
-                username: 'admin',
-                // Default password is 'admin123'
-                password: '$2a$10$zGqHJj7SKvU/BzQe5Xc7n.7vFqE3Qc3/p1fIHYwF0c7UyV7NFWqPe',
-                role: 'admin',
-                assignedCategories: []
-            }
-        ]
+    const defaultUsers = {
+        users: [{
+            username: 'admin',
+            // Default password: admin123
+            password: bcrypt.hashSync('admin123', 10),
+            role: 'admin',
+            assignedCategories: []
+        }]
     };
-    fs.writeFileSync(USERS_FILE, JSON.stringify(initialUsers, null, 2));
+    fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
 }
 
 // Initialize categories.json if it doesn't exist
