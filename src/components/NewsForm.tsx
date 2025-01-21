@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories } from "@/types";
-import { generateXml } from "./XmlGenerator";
+import { useQuery } from "@tanstack/react-query";
 
 const MAX_CHARS = 75;
 
@@ -17,21 +16,20 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
     const { language } = useLanguage();
     const { user } = useAuth();
 
+    const { data: categories = {}, refetch: refetchCategories } = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+            const response = await fetch('http://localhost:3000/api/categories');
+            return response.json();
+        }
+    });
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!text || !category) {
             toast({
                 title: language === 'ar' ? "خطأ" : "Error",
                 description: language === 'ar' ? "الرجاء ملء جميع الحقول" : "Please fill in all fields",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        if (text.length > MAX_CHARS) {
-            toast({
-                title: language === 'ar' ? "خطأ" : "Error",
-                description: language === 'ar' ? "النص يتجاوز الحد الأقصى المسموح به" : "Text exceeds maximum allowed length",
                 variant: "destructive",
             });
             return;
@@ -91,7 +89,7 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
     const isOverLimit = text.length > MAX_CHARS;
 
     return (
-        <form onSubmit={handleSubmit} className={`space-y-4 ${language === 'ar' ? 'rtl' : 'ltr'}`}>
+        <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
                 <label className="block text-sm font-medium">
                     {language === 'ar' ? 'نص الخبر' : 'News Text'}
@@ -99,7 +97,8 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
                 <Input
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    className={language === 'ar' ? 'text-right' : 'text-left'}
+                    className="text-right"
+                    dir="rtl"
                     placeholder={language === 'ar' ? "أدخل نص الخبر هنا" : "Enter news text here"}
                 />
                 <div className={`text-sm ${isOverLimit ? 'text-red-500' : 'text-black'}`}>

@@ -43,6 +43,21 @@ if (!fs.existsSync(CATEGORIES_FILE)) {
     fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(defaultCategories));
 }
 
+// Initialize settings.json if it doesn't exist
+const SETTINGS_FILE = path.join(__dirname, 'data', 'settings.json');
+if (!fs.existsSync(SETTINGS_FILE)) {
+    const defaultSettings = {
+        companyName: 'ShamsTV',
+        website: 'https://shams.tv',
+        email: 'zubair@shams.tv',
+        facebook: '',
+        twitter: '',
+        instagram: '',
+        linkedin: ''
+    };
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings));
+}
+
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -224,6 +239,23 @@ app.delete('/api/categories/:id', authenticateToken, (req, res) => {
     delete categories[id];
     fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories));
     res.json({ message: 'Category deleted successfully' });
+});
+
+// Get settings
+app.get('/api/settings', (req, res) => {
+    const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE));
+    res.json(settings);
+});
+
+// Update settings
+app.put('/api/settings', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const settings = req.body;
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings));
+    res.json({ message: 'Settings updated successfully' });
 });
 
 const PORT = 3000;

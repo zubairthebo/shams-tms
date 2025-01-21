@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { CategoryManagement } from "@/components/admin/CategoryManagement";
+import { SiteSettings } from "@/components/admin/SiteSettings";
 
 const AdminPanel = () => {
   const { language } = useLanguage();
@@ -35,6 +36,9 @@ const AdminPanel = () => {
           <TabsTrigger value="categories">
             {language === 'ar' ? 'الفئات' : 'Categories'}
           </TabsTrigger>
+          <TabsTrigger value="settings">
+            {language === 'ar' ? 'إعدادات الموقع' : 'Site Settings'}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="users">
           <Card>
@@ -47,6 +51,13 @@ const AdminPanel = () => {
           <Card>
             <CardContent className="pt-6">
               <CategoryManagement />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="settings">
+          <Card>
+            <CardContent className="pt-6">
+              <SiteSettings />
             </CardContent>
           </Card>
         </TabsContent>

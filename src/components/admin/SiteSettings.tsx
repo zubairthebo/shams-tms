@@ -1,0 +1,115 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+export const SiteSettings = () => {
+  const [settings, setSettings] = useState({
+    companyName: "ShamsTV",
+    website: "https://shams.tv",
+    email: "zubair@shams.tv",
+    facebook: "",
+    twitter: "",
+    instagram: "",
+    linkedin: ""
+  });
+  const { toast } = useToast();
+  const { language } = useLanguage();
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (response.ok) {
+        toast({
+          title: language === 'ar' ? "تم بنجاح" : "Success",
+          description: language === 'ar' ? "تم حفظ الإعدادات" : "Settings saved successfully",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: language === 'ar' ? "فشل في حفظ الإعدادات" : "Failed to save settings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">
+          {language === 'ar' ? 'إعدادات الموقع' : 'Site Settings'}
+        </h2>
+      </div>
+      <div className="grid gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            {language === 'ar' ? 'اسم الشركة' : 'Company Name'}
+          </label>
+          <Input
+            value={settings.companyName}
+            onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            {language === 'ar' ? 'الموقع الإلكتروني' : 'Website'}
+          </label>
+          <Input
+            value={settings.website}
+            onChange={(e) => setSettings({ ...settings, website: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            {language === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+          </label>
+          <Input
+            value={settings.email}
+            onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Facebook</label>
+          <Input
+            value={settings.facebook}
+            onChange={(e) => setSettings({ ...settings, facebook: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Twitter</label>
+          <Input
+            value={settings.twitter}
+            onChange={(e) => setSettings({ ...settings, twitter: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Instagram</label>
+          <Input
+            value={settings.instagram}
+            onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">LinkedIn</label>
+          <Input
+            value={settings.linkedin}
+            onChange={(e) => setSettings({ ...settings, linkedin: e.target.value })}
+          />
+        </div>
+        <Button onClick={handleSave}>
+          {language === 'ar' ? 'حفظ الإعدادات' : 'Save Settings'}
+        </Button>
+      </div>
+    </div>
+  );
+};
