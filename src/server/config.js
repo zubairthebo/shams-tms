@@ -44,8 +44,8 @@ if (!fs.existsSync(CATEGORIES_FILE)) {
 
 // Initialize settings.json if it doesn't exist
 if (!fs.existsSync(SETTINGS_FILE)) {
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify({
-        companyName: 'Default Company',
+    const defaultSettings = {
+        companyName: 'ShamsTV',
         logo: '',
         favicon: '',
         website: 'https://shams.tv',
@@ -54,5 +54,6 @@ if (!fs.existsSync(SETTINGS_FILE)) {
         twitter: '',
         instagram: '',
         linkedin: ''
-    }, null, 2));
+    };
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2));
 }

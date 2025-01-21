@@ -42,7 +42,7 @@ app.get('/api/settings', (req, res) => {
     try {
         if (!fs.existsSync(SETTINGS_FILE)) {
             const defaultSettings = {
-                companyName: 'Default Company',
+                companyName: 'ShamsTV',
                 logo: '',
                 favicon: '',
                 website: 'https://shams.tv',
