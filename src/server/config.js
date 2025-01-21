@@ -27,7 +27,6 @@ if (!fs.existsSync(USERS_FILE)) {
     const defaultUsers = {
         users: [{
             username: 'admin',
-            // Default password: admin123
             password: bcrypt.hashSync('admin123', 10),
             role: 'admin',
             assignedCategories: []
@@ -38,7 +37,21 @@ if (!fs.existsSync(USERS_FILE)) {
 
 // Initialize categories.json if it doesn't exist
 if (!fs.existsSync(CATEGORIES_FILE)) {
-    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify({ categories: [] }, null, 2));
+    const defaultCategories = {
+        sports: {
+            ar: "رياضة",
+            en: "Sports"
+        },
+        politics: {
+            ar: "سياسة",
+            en: "Politics"
+        },
+        economy: {
+            ar: "اقتصاد",
+            en: "Economy"
+        }
+    };
+    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(defaultCategories, null, 2));
 }
 
 // Initialize settings.json if it doesn't exist
@@ -48,11 +61,7 @@ if (!fs.existsSync(SETTINGS_FILE)) {
         logo: '',
         favicon: '',
         website: 'https://shams.tv',
-        email: 'info@shams.tv',
-        facebook: '',
-        twitter: '',
-        instagram: '',
-        linkedin: ''
+        email: 'info@shams.tv'
     };
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2));
 }

@@ -37,6 +37,40 @@ const upload = multer({ storage: storage });
 app.post('/api/login', handleLogin);
 app.post('/api/save-xml', authenticateToken, saveXML);
 
+// Categories endpoints
+app.get('/api/categories', (req, res) => {
+    try {
+        if (!fs.existsSync(CATEGORIES_FILE)) {
+            return res.status(404).json({ error: 'Categories file not found' });
+        }
+        const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE));
+        res.json(categories);
+    } catch (error) {
+        console.error('Error reading categories:', error);
+        res.status(500).json({ error: 'Failed to read categories' });
+    }
+});
+
+app.put('/api/categories/:id', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    try {
+        const { id } = req.params;
+        const { ar, en } = req.body;
+        
+        const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE));
+        categories[id] = { ar, en };
+        
+        fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories, null, 2));
+        res.json({ message: 'Category updated successfully' });
+    } catch (error) {
+        console.error('Error updating category:', error);
+        res.status(500).json({ error: 'Failed to update category' });
+    }
+});
+
 // Settings endpoints
 app.get('/api/settings', (req, res) => {
     try {
