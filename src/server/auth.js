@@ -20,30 +20,49 @@ export const handleLogin = (req, res) => {
     const { username, password } = req.body;
     console.log('Login attempt:', { username });
 
-    const userData = JSON.parse(fs.readFileSync(USERS_FILE));
-    const user = userData.users.find(u => u.username === username);
-    
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-        console.log('Login failed: Invalid credentials');
-        return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign(
-        { 
-            username: user.username, 
-            role: user.role,
-            assignedCategories: user.assignedCategories 
-        }, 
-        JWT_SECRET
-    );
-
-    console.log('Login successful');
-    res.json({ 
-        token, 
-        user: { 
-            username: user.username, 
-            role: user.role,
-            assignedCategories: user.assignedCategories 
+    try {
+        // Ensure users.json exists and is readable
+        if (!fs.existsSync(USERS_FILE)) {
+            const defaultUsers = {
+                users: [{
+                    username: 'admin',
+                    // Default password: admin123
+                    password: '$2a$10$zGqHJj7SKvU/BzQe5Xc7n.7vFqE3Qc3/p1fIHYwF0c7UyV7NFWqPe',
+                    role: 'admin',
+                    assignedCategories: []
+                }]
+            };
+            fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
         }
-    });
+
+        const userData = JSON.parse(fs.readFileSync(USERS_FILE));
+        const user = userData.users.find(u => u.username === username);
+        
+        if (!user || !bcrypt.compareSync(password, user.password)) {
+            console.log('Login failed: Invalid credentials');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign(
+            { 
+                username: user.username, 
+                role: user.role,
+                assignedCategories: user.assignedCategories 
+            }, 
+            JWT_SECRET
+        );
+
+        console.log('Login successful');
+        res.json({ 
+            token, 
+            user: { 
+                username: user.username, 
+                role: user.role,
+                assignedCategories: user.assignedCategories 
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Server error during login' });
+    }
 };
