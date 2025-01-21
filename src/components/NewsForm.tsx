@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
+import { generateXml } from "@/components/XmlGenerator";
 
 const MAX_CHARS = 75;
 
