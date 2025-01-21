@@ -12,9 +12,10 @@ export const XML_DIR = path.join(__dirname, '..', '..', 'xml');
 export const USERS_FILE = path.join(DATA_DIR, 'users.json');
 export const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json');
 export const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+export const UPLOADS_DIR = path.join(__dirname, '..', '..', 'public', 'uploads');
 
 // Ensure directories exist
-[DATA_DIR, XML_DIR].forEach(dir => {
+[DATA_DIR, XML_DIR, UPLOADS_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
@@ -46,6 +47,12 @@ if (!fs.existsSync(SETTINGS_FILE)) {
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify({
         companyName: 'Default Company',
         logo: '',
-        favicon: ''
+        favicon: '',
+        website: 'https://shams.tv',
+        email: 'info@shams.tv',
+        facebook: '',
+        twitter: '',
+        instagram: '',
+        linkedin: ''
     }, null, 2));
 }

@@ -17,6 +17,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from public directory
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -33,6 +36,54 @@ const upload = multer({ storage: storage });
 // Routes
 app.post('/api/login', handleLogin);
 app.post('/api/save-xml', authenticateToken, saveXML);
+
+// Settings endpoints
+app.get('/api/settings', (req, res) => {
+    try {
+        if (!fs.existsSync(SETTINGS_FILE)) {
+            const defaultSettings = {
+                companyName: 'Default Company',
+                logo: '',
+                favicon: '',
+                website: 'https://shams.tv',
+                email: 'info@shams.tv'
+            };
+            fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2));
+            return res.json(defaultSettings);
+        }
+        const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE));
+        res.json(settings);
+    } catch (error) {
+        console.error('Error reading settings:', error);
+        res.status(500).json({ error: 'Failed to read settings' });
+    }
+});
+
+app.put('/api/settings', authenticateToken, upload.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'favicon', maxCount: 1 }
+]), (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    try {
+        const settings = JSON.parse(req.body.settings);
+        if (req.files) {
+            if (req.files.logo) {
+                settings.logo = `/uploads/${req.files.logo[0].filename}`;
+            }
+            if (req.files.favicon) {
+                settings.favicon = `/uploads/${req.files.favicon[0].filename}`;
+            }
+        }
+        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+        res.json({ message: 'Settings updated successfully' });
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        res.status(500).json({ error: 'Failed to update settings' });
+    }
+});
 
 // User management endpoints
 app.post('/api/users', authenticateToken, (req, res) => {
@@ -99,33 +150,6 @@ app.get('/api/users', authenticateToken, (req, res) => {
     const userData = JSON.parse(fs.readFileSync(USERS_FILE));
     const sanitizedUsers = userData.users.map(({ password, ...user }) => user);
     res.json(sanitizedUsers);
-});
-
-// Settings endpoints with file upload
-app.put('/api/settings', authenticateToken, upload.fields([
-    { name: 'logo', maxCount: 1 },
-    { name: 'favicon', maxCount: 1 }
-]), (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    try {
-        const settings = JSON.parse(req.body.settings);
-        if (req.files) {
-            if (req.files.logo) {
-                settings.logo = `/uploads/${req.files.logo[0].filename}`;
-            }
-            if (req.files.favicon) {
-                settings.favicon = `/uploads/${req.files.favicon[0].filename}`;
-            }
-        }
-        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings));
-        res.json({ message: 'Settings updated successfully' });
-    } catch (error) {
-        console.error('Error updating settings:', error);
-        res.status(500).json({ error: 'Failed to update settings' });
-    }
 });
 
 const PORT = 3000;
