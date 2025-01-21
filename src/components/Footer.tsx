@@ -5,7 +5,7 @@ export const Footer = () => {
   const { language } = useLanguage();
   const currentYear = new Date().getFullYear();
 
-  const { data: settings } = useQuery({
+  const { data: settings, isLoading } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
       const response = await fetch('http://localhost:3000/api/settings');
@@ -21,6 +21,18 @@ export const Footer = () => {
       linkedin: ''
     }
   });
+
+  if (isLoading || !settings) {
+    return (
+      <footer className="bg-gray-100 py-6 mt-auto">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="bg-gray-100 py-6 mt-auto">
