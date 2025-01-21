@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Label } from "@/components/ui/label";
 
 export const SiteSettings = () => {
   const [settings, setSettings] = useState({
@@ -14,18 +15,24 @@ export const SiteSettings = () => {
     instagram: "",
     linkedin: ""
   });
+  const [logo, setLogo] = useState<File | null>(null);
+  const [favicon, setFavicon] = useState<File | null>(null);
   const { toast } = useToast();
   const { language } = useLanguage();
 
   const handleSave = async () => {
     try {
+      const formData = new FormData();
+      if (logo) formData.append('logo', logo);
+      if (favicon) formData.append('favicon', favicon);
+      formData.append('settings', JSON.stringify(settings));
+
       const response = await fetch('http://localhost:3000/api/settings', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(settings),
+        body: formData
       });
 
       if (response.ok) {
@@ -52,9 +59,29 @@ export const SiteSettings = () => {
       </div>
       <div className="grid gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <Label className="block text-sm font-medium mb-1">
+            {language === 'ar' ? 'شعار الموقع' : 'Site Logo'}
+          </Label>
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setLogo(e.target.files?.[0] || null)}
+          />
+        </div>
+        <div>
+          <Label className="block text-sm font-medium mb-1">
+            {language === 'ar' ? 'أيقونة الموقع' : 'Site Favicon'}
+          </Label>
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFavicon(e.target.files?.[0] || null)}
+          />
+        </div>
+        <div>
+          <Label className="block text-sm font-medium mb-1">
             {language === 'ar' ? 'اسم الشركة' : 'Company Name'}
-          </label>
+          </Label>
           <Input
             value={settings.companyName}
             onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}

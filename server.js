@@ -1,114 +1,34 @@
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
+const multer = require('multer');
 const path = require('path');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const app = express();
+const { authenticateToken, handleLogin } = require('./src/server/auth');
+const { saveXML } = require('./src/server/xmlGenerator');
+const { USERS_FILE, CATEGORIES_FILE, SETTINGS_FILE } = require('./src/server/config');
+const fs = require('fs');
 
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
-const USERS_FILE = path.join(__dirname, 'data', 'users.json');
-const XML_DIR = path.join(__dirname, 'xml');
-const CATEGORIES_FILE = path.join(__dirname, 'data', 'categories.json');
-
-// Ensure directories exist
-[XML_DIR, path.dirname(USERS_FILE)].forEach(dir => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/uploads')
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, file.fieldname + '-' + Date.now() + ext)
     }
 });
 
-// Initialize users.json if it doesn't exist
-if (!fs.existsSync(USERS_FILE)) {
-    const defaultAdmin = {
-        username: 'admin',
-        password: bcrypt.hashSync('admin123', 10),
-        role: 'admin',
-        assignedCategories: []
-    };
-    fs.writeFileSync(USERS_FILE, JSON.stringify({ users: [defaultAdmin] }));
-}
+const upload = multer({ storage: storage });
 
-// Initialize categories.json if it doesn't exist
-if (!fs.existsSync(CATEGORIES_FILE)) {
-    const defaultCategories = {
-        politics: { ar: 'سياسة', en: 'Politics' },
-        sports: { ar: 'رياضة', en: 'Sports' },
-        economy: { ar: 'اقتصاد', en: 'Economy' },
-        technology: { ar: 'تكنولوجيا', en: 'Technology' }
-    };
-    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(defaultCategories));
-}
+// Routes
+app.post('/api/login', handleLogin);
+app.post('/api/save-xml', authenticateToken, saveXML);
 
-// Initialize settings.json if it doesn't exist
-const SETTINGS_FILE = path.join(__dirname, 'data', 'settings.json');
-if (!fs.existsSync(SETTINGS_FILE)) {
-    const defaultSettings = {
-        companyName: 'ShamsTV',
-        website: 'https://shams.tv',
-        email: 'zubair@shams.tv',
-        facebook: '',
-        twitter: '',
-        instagram: '',
-        linkedin: ''
-    };
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings));
-}
-
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) return res.status(401).json({ error: 'Access denied' });
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Invalid token' });
-        req.user = user;
-        next();
-    });
-};
-
-// Login endpoint
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    console.log('Login attempt:', { username }); // Add logging
-
-    // Read users from file
-    const userData = JSON.parse(fs.readFileSync(USERS_FILE));
-    const user = userData.users.find(u => u.username === username);
-    
-    console.log('User found:', user ? 'yes' : 'no'); // Add logging
-
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-        console.log('Login failed: Invalid credentials'); // Add logging
-        return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign(
-        { 
-            username: user.username, 
-            role: user.role,
-            assignedCategories: user.assignedCategories 
-        }, 
-        JWT_SECRET
-    );
-
-    console.log('Login successful'); // Add logging
-    res.json({ 
-        token, 
-        user: { 
-            username: user.username, 
-            role: user.role,
-            assignedCategories: user.assignedCategories 
-        }
-    });
-});
-
-// Admin endpoint to manage users
+// User management endpoints
 app.post('/api/users', authenticateToken, (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -134,7 +54,6 @@ app.post('/api/users', authenticateToken, (req, res) => {
     res.json({ message: 'User created successfully' });
 });
 
-// Update user endpoint
 app.put('/api/users/:username', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -166,100 +85,35 @@ app.put('/api/users/:username', authenticateToken, async (req, res) => {
     res.json({ message: 'User updated successfully' });
 });
 
-// Get all users endpoint
 app.get('/api/users', authenticateToken, (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
     }
 
     const userData = JSON.parse(fs.readFileSync(USERS_FILE));
-    // Remove password hashes from response
     const sanitizedUsers = userData.users.map(({ password, ...user }) => user);
     res.json(sanitizedUsers);
 });
 
-// Save XML when news is submitted
-app.post('/api/save-xml', authenticateToken, (req, res) => {
-    const { xml, category } = req.body;
-    
-    // Check if user has permission for this category
-    if (req.user.role !== 'admin' && !req.user.assignedCategories.includes(category)) {
-        return res.status(403).json({ error: 'Unauthorized category access' });
+// Settings endpoints with file upload
+app.put('/api/settings', authenticateToken, upload.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'favicon', maxCount: 1 }
+]), (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${category}.xml`;
-    const filepath = path.join(XML_DIR, filename);
-
-    fs.writeFile(filepath, xml, (err) => {
-        if (err) {
-            console.error('Error saving XML:', err);
-            res.status(500).json({ error: 'Failed to save XML' });
-            return;
+    try {
+        const settings = JSON.parse(req.body.settings);
+        if (req.files) {
+            if (req.files.logo) {
+                settings.logo = `/uploads/${req.files.logo[0].filename}`;
+            }
+            if (req.files.favicon) {
+                settings.favicon = `/uploads/${req.files.favicon[0].filename}`;
+            }
         }
-        res.json({ message: 'XML saved successfully', filename });
-    });
-});
-
-// Get categories
-app.get('/api/categories', (req, res) => {
-    const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE));
-    res.json(categories);
-});
-
-// Add/Update category
-app.put('/api/categories/:id', authenticateToken, (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { id } = req.params;
-    const { ar, en } = req.body;
-    
-    const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE));
-    categories[id] = { ar, en };
-    
-    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories));
-    res.json({ message: 'Category updated successfully' });
-});
-
-// Delete category
-app.delete('/api/categories/:id', authenticateToken, (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { id } = req.params;
-    const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE));
-    
-    if (!categories[id]) {
-        return res.status(404).json({ error: 'Category not found' });
-    }
-    
-    delete categories[id];
-    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories));
-    res.json({ message: 'Category deleted successfully' });
-});
-
-// Get settings
-app.get('/api/settings', (req, res) => {
-    try {
-        const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE));
-        res.json(settings);
-    } catch (error) {
-        console.error('Error reading settings:', error);
-        res.status(500).json({ error: 'Failed to read settings' });
-    }
-});
-
-// Update settings
-app.put('/api/settings', authenticateToken, (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    try {
-        const settings = req.body;
         fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings));
         res.json({ message: 'Settings updated successfully' });
     } catch (error) {
@@ -271,8 +125,4 @@ app.put('/api/settings', authenticateToken, (req, res) => {
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log('Default admin credentials:', {
-        username: 'admin',
-        password: 'admin123'
-    });
 });
