@@ -5,7 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Trash2, Edit2, Check, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, type NewsItem } from "@/types";
+import { useQuery } from "@tanstack/react-query";
+
+type NewsItem = {
+  id: string;
+  text: string;
+  category: string;
+  timestamp: Date;
+};
 
 export const NewsList = ({ 
   items, 
@@ -20,6 +27,14 @@ export const NewsList = ({
   const { user } = useAuth();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+
+  const { data: categories = {} } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const response = await fetch('http://localhost:3000/api/categories');
+      return response.json();
+    }
+  });
   
   const groupedItems = items.reduce((acc, item) => {
     if (!acc[item.category]) {
@@ -50,13 +65,19 @@ export const NewsList = ({
     return user?.role === 'admin' || user?.assignedCategories.includes(category);
   };
 
+  const getCategoryLabel = (categoryId: string) => {
+    return categories[categoryId] 
+      ? categories[categoryId][language]
+      : categoryId; // Fallback to category ID if not found
+  };
+
   return (
     <div className={`space-y-6 ${language === 'ar' ? 'rtl' : 'ltr'}`}>
       {Object.entries(groupedItems).map(([category, news]) => (
         <Card key={category}>
           <CardHeader>
             <CardTitle>
-              {categories[category as keyof typeof categories][language]}
+              {getCategoryLabel(category)}
             </CardTitle>
           </CardHeader>
           <CardContent>
