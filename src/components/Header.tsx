@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 export const Header = () => {
@@ -18,33 +18,27 @@ export const Header = () => {
     }
   });
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const handlePasswordReset = async () => {
-    // Implementation for password reset
-    handleLogout();
+  const handlePasswordReset = () => {
+    navigate('/reset-password');
   };
 
   return (
     <header className="bg-background border-b">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
+        <Link to="/" className="flex items-center space-x-4 hover:opacity-80 transition-opacity">
           {settings?.logo ? (
-            <img src={settings.logo} alt="Logo" className="h-8" />
+            <img src={settings.logo} alt={settings?.companyName || 'Logo'} className="h-8" />
           ) : (
             <span className="text-xl font-bold">{settings?.companyName || 'ShamsTV'}</span>
           )}
-        </div>
+        </Link>
         <div className="flex items-center space-x-4">
           {user && (
             <>
               <Button variant="outline" onClick={handlePasswordReset}>
                 {language === 'ar' ? 'تغيير كلمة المرور' : 'Reset Password'}
               </Button>
-              <Button variant="outline" onClick={handleLogout}>
+              <Button variant="outline" onClick={logout}>
                 {language === 'ar' ? 'تسجيل الخروج' : 'Logout'}
               </Button>
             </>

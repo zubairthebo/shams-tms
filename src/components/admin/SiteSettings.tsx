@@ -26,11 +26,15 @@ export const SiteSettings = () => {
     queryFn: async () => {
       const response = await fetch('http://localhost:3000/api/settings');
       if (!response.ok) throw new Error('Failed to fetch settings');
-      const data = await response.json();
-      setSettings(data);
-      return data;
+      return response.json();
     }
   });
+
+  useEffect(() => {
+    if (currentSettings) {
+      setSettings(currentSettings);
+    }
+  }, [currentSettings]);
 
   const handleSave = async () => {
     try {
@@ -111,28 +115,28 @@ export const SiteSettings = () => {
           />
         </div>
         <div>
-          <Label className="block text-sm font-medium mb-1">Facebook</Label>
+          <Label className="block text-sm font-medium mb-1">Facebook URL</Label>
           <Input
             value={settings.facebook}
             onChange={(e) => setSettings({ ...settings, facebook: e.target.value })}
           />
         </div>
         <div>
-          <Label className="block text-sm font-medium mb-1">Twitter</Label>
+          <Label className="block text-sm font-medium mb-1">Twitter URL</Label>
           <Input
             value={settings.twitter}
             onChange={(e) => setSettings({ ...settings, twitter: e.target.value })}
           />
         </div>
         <div>
-          <Label className="block text-sm font-medium mb-1">Instagram</Label>
+          <Label className="block text-sm font-medium mb-1">Instagram URL</Label>
           <Input
             value={settings.instagram}
             onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
           />
         </div>
         <div>
-          <Label className="block text-sm font-medium mb-1">LinkedIn</Label>
+          <Label className="block text-sm font-medium mb-1">LinkedIn URL</Label>
           <Input
             value={settings.linkedin}
             onChange={(e) => setSettings({ ...settings, linkedin: e.target.value })}

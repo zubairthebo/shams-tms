@@ -1,5 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
+import { Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 
 export const Footer = () => {
   const { language } = useLanguage();
@@ -14,7 +15,7 @@ export const Footer = () => {
     initialData: {
       companyName: 'ShamsTV',
       website: 'https://shams.tv',
-      email: 'zubair@shams.tv',
+      email: 'info@shams.tv',
       facebook: '',
       twitter: '',
       instagram: '',
@@ -62,23 +63,43 @@ export const Footer = () => {
           </div>
           <div className="flex justify-center space-x-4 mt-4">
             {settings.facebook && (
-              <a href={settings.facebook} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-dark">
-                Facebook
+              <a 
+                href={settings.facebook} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-primary hover:text-primary-dark"
+              >
+                <Facebook className="w-6 h-6" />
               </a>
             )}
             {settings.twitter && (
-              <a href={settings.twitter} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-dark">
-                Twitter
+              <a 
+                href={settings.twitter} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-primary hover:text-primary-dark"
+              >
+                <Twitter className="w-6 h-6" />
               </a>
             )}
             {settings.instagram && (
-              <a href={settings.instagram} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-dark">
-                Instagram
+              <a 
+                href={settings.instagram} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-primary hover:text-primary-dark"
+              >
+                <Instagram className="w-6 h-6" />
               </a>
             )}
             {settings.linkedin && (
-              <a href={settings.linkedin} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-dark">
-                LinkedIn
+              <a 
+                href={settings.linkedin} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-primary hover:text-primary-dark"
+              >
+                <Linkedin className="w-6 h-6" />
               </a>
             )}
           </div>

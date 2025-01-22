@@ -1,16 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UserFormProps {
   onSubmit: (userData: any) => Promise<void>;
@@ -30,6 +23,14 @@ export const UserForm = ({ onSubmit, initialData, onCancel, categories }: UserFo
   );
   const { language } = useLanguage();
 
+  const handleCategoryToggle = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit({
@@ -43,88 +44,90 @@ export const UserForm = ({ onSubmit, initialData, onCancel, categories }: UserFo
   };
 
   return (
-    <Card className="p-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {!initialData && (
+    <Card className="p-6 max-w-4xl mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {!initialData && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                {language === "ar" ? "اسم المستخدم" : "Username"}
+              </label>
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required={!initialData}
+              />
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium mb-1">
-              {language === "ar" ? "اسم المستخدم" : "Username"}
+              {language === "ar" ? "كلمة المرور" : "Password"}
             </label>
             <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required={!initialData}
+              placeholder={initialData ? "Leave blank to keep current password" : ""}
             />
           </div>
-        )}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            {language === "ar" ? "كلمة المرور" : "Password"}
-          </label>
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required={!initialData}
-            placeholder={initialData ? "Leave blank to keep current password" : ""}
-          />
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              {language === "ar" ? "الاسم" : "Name"}
+            </label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              {language === "ar" ? "المسمى الوظيفي" : "Designation"}
+            </label>
+            <Input
+              value={designation}
+              onChange={(e) => setDesignation(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              {language === "ar" ? "البريد الإلكتروني" : "Email"}
+            </label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
         </div>
+        
         <div>
-          <label className="block text-sm font-medium mb-1">
-            {language === "ar" ? "الاسم" : "Name"}
-          </label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            {language === "ar" ? "المسمى الوظيفي" : "Designation"}
-          </label>
-          <Input
-            value={designation}
-            onChange={(e) => setDesignation(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            {language === "ar" ? "البريد الإلكتروني" : "Email"}
-          </label>
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm font-medium mb-3">
             {language === "ar" ? "الفئات المسموح بها" : "Assigned Categories"}
           </label>
-          <Select
-            value={selectedCategories.join(",")}
-            onValueChange={(value) => setSelectedCategories(value.split(","))}
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  language === "ar" ? "اختر الفئات" : "Select categories"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(categories).map(([id, labels]: [string, any]) => (
-                <SelectItem key={id} value={id}>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Object.entries(categories).map(([id, labels]) => (
+              <div key={id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`category-${id}`}
+                  checked={selectedCategories.includes(id)}
+                  onCheckedChange={() => handleCategoryToggle(id)}
+                />
+                <label
+                  htmlFor={`category-${id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
                   {labels[language]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex space-x-2">
+
+        <div className="flex justify-end space-x-4">
           <Button type="submit">
             {language === "ar" ? "حفظ" : "Save"}
           </Button>
