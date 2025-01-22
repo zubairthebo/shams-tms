@@ -5,6 +5,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card } from "@/components/ui/card";
 import { Edit, UserPlus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
 
 interface User {
   username: string;
@@ -16,9 +18,18 @@ export const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const { toast } = useToast();
   const { language } = useLanguage();
+
+  const { data: categories = {} } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const response = await fetch('http://localhost:3000/api/categories');
+      return response.json();
+    }
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -52,7 +63,7 @@ export const UserManagement = () => {
         body: JSON.stringify({
           username: newUsername,
           password: newPassword,
-          assignedCategories: []
+          assignedCategories: selectedCategories
         }),
       });
 
@@ -63,6 +74,7 @@ export const UserManagement = () => {
         });
         setNewUsername("");
         setNewPassword("");
+        setSelectedCategories([]);
         setEditingUser(null);
         fetchUsers();
       }
@@ -85,6 +97,7 @@ export const UserManagement = () => {
         },
         body: JSON.stringify({
           password: newPassword,
+          assignedCategories: selectedCategories
         }),
       });
 
@@ -95,6 +108,7 @@ export const UserManagement = () => {
         });
         setEditingUser(null);
         setNewPassword("");
+        setSelectedCategories([]);
         fetchUsers();
       }
     } catch (error) {
@@ -104,6 +118,11 @@ export const UserManagement = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user.username);
+    setSelectedCategories(user.assignedCategories);
   };
 
   return (
@@ -142,11 +161,36 @@ export const UserManagement = () => {
                 required
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                {language === 'ar' ? 'الفئات المسموح بها' : 'Assigned Categories'}
+              </label>
+              <Select
+                value={selectedCategories.join(',')}
+                onValueChange={(value) => setSelectedCategories(value.split(','))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={language === 'ar' ? 'اختر الفئات' : 'Select categories'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(categories).map(([id, labels]: [string, any]) => (
+                    <SelectItem key={id} value={id}>
+                      {labels[language]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex space-x-2">
               <Button type="submit">
                 {language === 'ar' ? 'حفظ' : 'Save'}
               </Button>
-              <Button variant="outline" onClick={() => setEditingUser(null)}>
+              <Button variant="outline" onClick={() => {
+                setEditingUser(null);
+                setNewUsername("");
+                setNewPassword("");
+                setSelectedCategories([]);
+              }}>
                 {language === 'ar' ? 'إلغاء' : 'Cancel'}
               </Button>
             </div>
@@ -165,12 +209,12 @@ export const UserManagement = () => {
                 </p>
                 <p className="text-sm text-gray-600">
                   {language === 'ar' ? 'الفئات: ' : 'Categories: '}
-                  {user.assignedCategories.join(', ')}
+                  {user.assignedCategories.map(cat => categories[cat]?.[language]).join(', ')}
                 </p>
               </div>
               <div className="space-x-2">
                 {editingUser === user.username ? (
-                  <>
+                  <div className="space-y-4">
                     <Input
                       type="password"
                       value={newPassword}
@@ -178,15 +222,36 @@ export const UserManagement = () => {
                       placeholder={language === 'ar' ? "كلمة المرور الجديدة" : "New password"}
                       className="mb-2"
                     />
-                    <Button onClick={() => handleUpdateUser(user.username)}>
-                      {language === 'ar' ? 'حفظ' : 'Save'}
-                    </Button>
-                    <Button variant="outline" onClick={() => setEditingUser(null)}>
-                      {language === 'ar' ? 'إلغاء' : 'Cancel'}
-                    </Button>
-                  </>
+                    <Select
+                      value={selectedCategories.join(',')}
+                      onValueChange={(value) => setSelectedCategories(value.split(','))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={language === 'ar' ? 'اختر الفئات' : 'Select categories'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(categories).map(([id, labels]: [string, any]) => (
+                          <SelectItem key={id} value={id}>
+                            {labels[language]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex space-x-2 mt-2">
+                      <Button onClick={() => handleUpdateUser(user.username)}>
+                        {language === 'ar' ? 'حفظ' : 'Save'}
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setEditingUser(null);
+                        setNewPassword("");
+                        setSelectedCategories([]);
+                      }}>
+                        {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
-                  <Button variant="outline" onClick={() => setEditingUser(user.username)}>
+                  <Button variant="outline" onClick={() => handleEditUser(user)}>
                     <Edit className="h-4 w-4 mr-2" />
                     {language === 'ar' ? 'تعديل' : 'Edit'}
                   </Button>

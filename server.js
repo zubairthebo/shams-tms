@@ -49,8 +49,7 @@ const generateTickerXML = (items, category) => {
             <attributes>
                 <attribute name="custom_attribute">custom value</attribute>
             </attributes>
-        </defaults>
-        ${items.map(item => `
+        </defaults>${items.map(item => `
         <element>
             <field name="1">${item.text.replace(/[<>&'"]/g, char => ({
                 '<': '&lt;',
@@ -70,16 +69,8 @@ app.post('/api/save-xml', authenticateToken, (req, res) => {
     try {
         const { text, category } = req.body;
         
-        // Add detailed validation
         if (!text || !category) {
-            console.log('Missing fields:', { text, category }); // Debug log
-            return res.status(400).json({ 
-                error: 'Missing required fields',
-                details: {
-                    text: !text ? 'Text is required' : null,
-                    category: !category ? 'Category is required' : null
-                }
-            });
+            return res.status(400).json({ error: 'Missing required fields' });
         }
 
         if (req.user.role !== 'admin' && !req.user.assignedCategories.includes(category)) {
@@ -94,13 +85,34 @@ app.post('/api/save-xml', authenticateToken, (req, res) => {
         const filename = `${category}.xml`;
         const filepath = path.join(XML_DIR, filename);
         
-        // Generate and save XML content
-        const xmlContent = generateTickerXML([{
+        // Read existing items or initialize new array
+        let existingItems = [];
+        if (fs.existsSync(filepath)) {
+            const xmlContent = fs.readFileSync(filepath, 'utf-8');
+            // Simple parsing to extract existing items
+            const matches = xmlContent.match(/<field name="1">(.*?)<\/field>/g);
+            if (matches) {
+                existingItems = matches.map(match => ({
+                    text: match.replace(/<field name="1">(.*?)<\/field>/, '$1')
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&amp;/g, '&')
+                        .replace(/&apos;/g, "'")
+                        .replace(/&quot;/g, '"'),
+                    timestamp: new Date(),
+                    category
+                }));
+            }
+        }
+
+        // Add new item
+        existingItems.push({
             text,
             timestamp: new Date(),
             category
-        }], category);
+        });
 
+        const xmlContent = generateTickerXML(existingItems, category);
         fs.writeFileSync(filepath, xmlContent);
         
         res.json({ message: 'XML saved successfully', filename });

@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Label } from "@/components/ui/label";
+import { useQuery } from "@tanstack/react-query";
 
 export const SiteSettings = () => {
   const [settings, setSettings] = useState({
-    companyName: "ShamsTV",
-    website: "https://shams.tv",
-    email: "zubair@shams.tv",
+    companyName: "",
+    website: "",
+    email: "",
     facebook: "",
     twitter: "",
     instagram: "",
@@ -19,6 +20,17 @@ export const SiteSettings = () => {
   const [favicon, setFavicon] = useState<File | null>(null);
   const { toast } = useToast();
   const { language } = useLanguage();
+
+  const { data: currentSettings, refetch: refetchSettings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const response = await fetch('http://localhost:3000/api/settings');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setSettings(data);
+    }
+  });
 
   const handleSave = async () => {
     try {
@@ -40,6 +52,7 @@ export const SiteSettings = () => {
           title: language === 'ar' ? "تم بنجاح" : "Success",
           description: language === 'ar' ? "تم حفظ الإعدادات" : "Settings saved successfully",
         });
+        refetchSettings();
       }
     } catch (error) {
       toast({
@@ -67,6 +80,9 @@ export const SiteSettings = () => {
             accept="image/*"
             onChange={(e) => setLogo(e.target.files?.[0] || null)}
           />
+          {currentSettings?.logo && (
+            <img src={currentSettings.logo} alt="Current logo" className="mt-2 h-12" />
+          )}
         </div>
         <div>
           <Label className="block text-sm font-medium mb-1">
@@ -77,6 +93,9 @@ export const SiteSettings = () => {
             accept="image/*"
             onChange={(e) => setFavicon(e.target.files?.[0] || null)}
           />
+          {currentSettings?.favicon && (
+            <img src={currentSettings.favicon} alt="Current favicon" className="mt-2 h-8" />
+          )}
         </div>
         <div>
           <Label className="block text-sm font-medium mb-1">
@@ -88,46 +107,46 @@ export const SiteSettings = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <Label className="block text-sm font-medium mb-1">
             {language === 'ar' ? 'الموقع الإلكتروني' : 'Website'}
-          </label>
+          </Label>
           <Input
             value={settings.website}
             onChange={(e) => setSettings({ ...settings, website: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <Label className="block text-sm font-medium mb-1">
             {language === 'ar' ? 'البريد الإلكتروني' : 'Email'}
-          </label>
+          </Label>
           <Input
             value={settings.email}
             onChange={(e) => setSettings({ ...settings, email: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Facebook</label>
+          <Label className="block text-sm font-medium mb-1">Facebook</Label>
           <Input
             value={settings.facebook}
             onChange={(e) => setSettings({ ...settings, facebook: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Twitter</label>
+          <Label className="block text-sm font-medium mb-1">Twitter</Label>
           <Input
             value={settings.twitter}
             onChange={(e) => setSettings({ ...settings, twitter: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Instagram</label>
+          <Label className="block text-sm font-medium mb-1">Instagram</Label>
           <Input
             value={settings.instagram}
             onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">LinkedIn</label>
+          <Label className="block text-sm font-medium mb-1">LinkedIn</Label>
           <Input
             value={settings.linkedin}
             onChange={(e) => setSettings({ ...settings, linkedin: e.target.value })}
