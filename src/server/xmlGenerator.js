@@ -2,8 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { XML_DIR } from './config.js';
 
-const generateRSS2 = (items, category) => {
-    const now = new Date().toUTCString();
+const generateTickerXML = (items, category) => {
     const safeText = (text) => {
         if (!text || typeof text !== 'string') return '';
         return text.replace(/[<>&'"]/g, (char) => {
@@ -18,25 +17,27 @@ const generateRSS2 = (items, category) => {
         });
     };
 
-    return `<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
-    <channel>
-        <title>ShamsTV News - ${category}</title>
-        <link>https://shams.tv</link>
-        <description>Latest news from ShamsTV</description>
-        <language>ar</language>
-        <pubDate>${now}</pubDate>
-        <lastBuildDate>${now}</lastBuildDate>
-        ${items.map(item => `
-        <item>
-            <title>${safeText(item.text)}</title>
-            <description>${safeText(item.text)}</description>
-            <pubDate>${new Date(item.timestamp).toUTCString()}</pubDate>
-            <category>${safeText(category)}</category>
-        </item>
-        `).join('')}
-    </channel>
-</rss>`;
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<tickerfeed version="2.4">
+  <playlist type="flipping_carousel" name="MAIN_TICKER" target="carousel">
+    <defaults>
+      <template>TICKER_${category.toUpperCase()}_START</template>
+    </defaults>
+    <element />
+  </playlist>
+  <playlist type="flipping_carousel" name="MAIN_TICKER" target="carousel">
+    <defaults>
+      <template>TICKER_${category.toUpperCase()}</template>
+      <attributes>
+        <attribute name="custom_attribute">custom value</attribute>
+      </attributes>
+    </defaults>
+    ${items.map((item, index) => `
+    <element>
+      <field name="1">${safeText(item.text)}</field>
+    </element>`).join('')}
+  </playlist>
+</tickerfeed>`;
 };
 
 export const saveXML = (req, res) => {
@@ -54,14 +55,13 @@ export const saveXML = (req, res) => {
         const filename = `${category}.xml`;
         const filepath = path.join(XML_DIR, filename);
 
-        // Convert to RSS 2.0 format
-        const rss2Xml = generateRSS2([{
+        const xmlContent = generateTickerXML([{
             text: xml,
             timestamp: new Date(),
             category
         }], category);
 
-        fs.writeFileSync(filepath, rss2Xml);
+        fs.writeFileSync(filepath, xmlContent);
         res.json({ message: 'XML saved successfully', filename });
     } catch (error) {
         console.error('Error saving XML:', error);
