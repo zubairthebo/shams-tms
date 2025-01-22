@@ -5,7 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { authenticateToken, handleLogin } from './src/server/auth.js';
-import { saveXML } from './src/server/xmlGenerator.js';
 import { USERS_FILE, CATEGORIES_FILE, SETTINGS_FILE, XML_DIR } from './src/server/config.js';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
@@ -32,6 +31,38 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+// Function to generate XML content
+const generateTickerXML = (items, category) => {
+    const categoryUpper = category.toUpperCase();
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<tickerfeed version="2.4">
+    <playlist type="flipping_carousel" name="MAIN_TICKER" target="carousel">
+        <defaults>
+            <template>TICKER_${categoryUpper}_START</template>
+        </defaults>
+        <element />
+    </playlist>
+    <playlist type="flipping_carousel" name="MAIN_TICKER" target="carousel">
+        <defaults>
+            <template>TICKER_${categoryUpper}</template>
+            <attributes>
+                <attribute name="custom_attribute">custom value</attribute>
+            </attributes>
+        </defaults>
+        ${items.map(item => `
+        <element>
+            <field name="1">${item.text.replace(/[<>&'"]/g, char => ({
+                '<': '&lt;',
+                '>': '&gt;',
+                '&': '&amp;',
+                "'": '&apos;',
+                '"': '&quot;'
+            }[char]))}</field>
+        </element>`).join('')}
+    </playlist>
+</tickerfeed>`;
+};
 
 // Routes
 app.post('/api/login', handleLogin);
