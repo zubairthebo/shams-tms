@@ -32,7 +32,7 @@ const generateTickerXML = (items, category) => {
         <attribute name="custom_attribute">custom value</attribute>
       </attributes>
     </defaults>
-    ${items.map((item, index) => `
+    ${items.map(item => `
     <element>
       <field name="1">${safeText(item.text)}</field>
     </element>`).join('')}
@@ -42,9 +42,9 @@ const generateTickerXML = (items, category) => {
 
 export const saveXML = (req, res) => {
     try {
-        const { xml, category } = req.body;
+        const { text, category } = req.body;
         
-        if (!xml || !category) {
+        if (!text || !category) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -52,16 +52,21 @@ export const saveXML = (req, res) => {
             return res.status(403).json({ error: 'Unauthorized category access' });
         }
 
-        const filename = `${category}.xml`;
-        const filepath = path.join(XML_DIR, filename);
-
         const xmlContent = generateTickerXML([{
-            text: xml,
+            text,
             timestamp: new Date(),
             category
         }], category);
 
+        // Ensure XML directory exists
+        if (!fs.existsSync(XML_DIR)) {
+            fs.mkdirSync(XML_DIR, { recursive: true });
+        }
+
+        const filename = `${category}.xml`;
+        const filepath = path.join(XML_DIR, filename);
         fs.writeFileSync(filepath, xmlContent);
+        
         res.json({ message: 'XML saved successfully', filename });
     } catch (error) {
         console.error('Error saving XML:', error);

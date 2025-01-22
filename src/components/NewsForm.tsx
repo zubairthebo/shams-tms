@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,7 +6,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { generateXml } from "@/components/XmlGenerator";
 
 const MAX_CHARS = 75;
 
@@ -49,20 +48,19 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
             onSubmit({ text, category });
             setText("");
 
-            const xml = generateXml([{ id: crypto.randomUUID(), text, category, timestamp: new Date() }]);
             const token = localStorage.getItem('token');
-
             const response = await fetch('http://localhost:3000/api/save-xml', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ xml, category }),
+                body: JSON.stringify({ text, category }),
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save XML');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save XML');
             }
 
             toast({
@@ -75,6 +73,7 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
                 description: language === 'ar' ? "فشل في حفظ الخبر" : "Failed to save news",
                 variant: "destructive",
             });
+            console.error('Error saving news:', error);
         }
     };
 
