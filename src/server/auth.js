@@ -23,6 +23,7 @@ export const handleLogin = (req, res) => {
     try {
         // Ensure users.json exists and is readable
         if (!fs.existsSync(USERS_FILE)) {
+            console.log('Creating default users file');
             const defaultUsers = {
                 users: [{
                     username: 'admin',
@@ -35,6 +36,8 @@ export const handleLogin = (req, res) => {
         }
 
         const userData = JSON.parse(fs.readFileSync(USERS_FILE));
+        console.log('Found users:', userData.users.map(u => u.username));
+        
         const user = userData.users.find(u => u.username === username);
         
         if (!user) {
@@ -43,6 +46,8 @@ export const handleLogin = (req, res) => {
         }
 
         const isValidPassword = bcrypt.compareSync(password, user.password);
+        console.log('Password validation:', isValidPassword ? 'success' : 'failed');
+        
         if (!isValidPassword) {
             console.log('Login failed: Invalid password');
             return res.status(401).json({ error: 'Invalid credentials' });
