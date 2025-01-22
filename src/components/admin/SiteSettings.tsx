@@ -27,8 +27,10 @@ export const SiteSettings = () => {
       const response = await fetch('http://localhost:3000/api/settings');
       return response.json();
     },
-    onSuccess: (data) => {
-      setSettings(data);
+    meta: {
+      onSuccess: (data: any) => {
+        setSettings(data);
+      }
     }
   });
 
