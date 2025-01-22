@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { authenticateToken, handleLogin } from './src/server/auth.js';
 import { saveXML } from './src/server/xmlGenerator.js';
-import { USERS_FILE, CATEGORIES_FILE, SETTINGS_FILE } from './src/server/config.js';
+import { USERS_FILE, CATEGORIES_FILE, SETTINGS_FILE, XML_DIR } from './src/server/config.js';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 
@@ -35,7 +35,49 @@ const upload = multer({ storage: storage });
 
 // Routes
 app.post('/api/login', handleLogin);
-app.post('/api/save-xml', authenticateToken, saveXML);
+app.post('/api/save-xml', authenticateToken, (req, res) => {
+    try {
+        const { text, category } = req.body;
+        
+        // Add detailed validation
+        if (!text || !category) {
+            console.log('Missing fields:', { text, category }); // Debug log
+            return res.status(400).json({ 
+                error: 'Missing required fields',
+                details: {
+                    text: !text ? 'Text is required' : null,
+                    category: !category ? 'Category is required' : null
+                }
+            });
+        }
+
+        if (req.user.role !== 'admin' && !req.user.assignedCategories.includes(category)) {
+            return res.status(403).json({ error: 'Unauthorized category access' });
+        }
+
+        // Ensure XML directory exists
+        if (!fs.existsSync(XML_DIR)) {
+            fs.mkdirSync(XML_DIR, { recursive: true });
+        }
+
+        const filename = `${category}.xml`;
+        const filepath = path.join(XML_DIR, filename);
+        
+        // Generate and save XML content
+        const xmlContent = generateTickerXML([{
+            text,
+            timestamp: new Date(),
+            category
+        }], category);
+
+        fs.writeFileSync(filepath, xmlContent);
+        
+        res.json({ message: 'XML saved successfully', filename });
+    } catch (error) {
+        console.error('Error saving XML:', error);
+        res.status(500).json({ error: 'Failed to save XML' });
+    }
+});
 
 // Categories endpoints
 app.get('/api/categories', (req, res) => {

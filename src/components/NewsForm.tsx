@@ -26,7 +26,9 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!text || !category) {
+        
+        // Validate inputs
+        if (!text.trim() || !category) {
             toast({
                 title: language === 'ar' ? "خطأ" : "Error",
                 description: language === 'ar' ? "الرجاء ملء جميع الحقول" : "Please fill in all fields",
@@ -35,6 +37,7 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
             return;
         }
 
+        // Validate category access
         if (user?.role !== 'admin' && !user?.assignedCategories.includes(category)) {
             toast({
                 title: language === 'ar' ? "خطأ" : "Error",
@@ -52,12 +55,16 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ text, category }),
+                body: JSON.stringify({
+                    text: text.trim(),
+                    category: category
+                }),
             });
 
             const data = await response.json();
             
             if (!response.ok) {
+                console.error('Save XML Error:', data); // Debug log
                 throw new Error(data.error || 'Failed to save XML');
             }
 
@@ -69,12 +76,12 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
                 description: language === 'ar' ? "تمت إضافة الخبر" : "News item added successfully",
             });
         } catch (error) {
+            console.error('Error saving news:', error);
             toast({
                 title: language === 'ar' ? "خطأ" : "Error",
                 description: language === 'ar' ? "فشل في حفظ الخبر" : "Failed to save news",
                 variant: "destructive",
             });
-            console.error('Error saving news:', error);
         }
     };
 
