@@ -17,17 +17,18 @@ const generateTickerXML = (items, category) => {
         });
     };
 
+    const categoryUpper = category.toUpperCase();
     return `<?xml version="1.0" encoding="UTF-8"?>
 <tickerfeed version="2.4">
   <playlist type="flipping_carousel" name="MAIN_TICKER" target="carousel">
     <defaults>
-      <template>TICKER_${category.toUpperCase()}_START</template>
+      <template>TICKER_${categoryUpper}_START</template>
     </defaults>
     <element />
   </playlist>
   <playlist type="flipping_carousel" name="MAIN_TICKER" target="carousel">
     <defaults>
-      <template>TICKER_${category.toUpperCase()}</template>
+      <template>TICKER_${categoryUpper}</template>
       <attributes>
         <attribute name="custom_attribute">custom value</attribute>
       </attributes>
@@ -52,19 +53,24 @@ export const saveXML = (req, res) => {
             return res.status(403).json({ error: 'Unauthorized category access' });
         }
 
-        const xmlContent = generateTickerXML([{
-            text,
-            timestamp: new Date(),
-            category
-        }], category);
-
+        // Read existing XML file if it exists
+        let existingItems = [];
+        const filename = `${category}.xml`;
+        const filepath = path.join(XML_DIR, filename);
+        
         // Ensure XML directory exists
         if (!fs.existsSync(XML_DIR)) {
             fs.mkdirSync(XML_DIR, { recursive: true });
         }
 
-        const filename = `${category}.xml`;
-        const filepath = path.join(XML_DIR, filename);
+        // Add new item
+        existingItems.push({
+            text,
+            timestamp: new Date(),
+            category
+        });
+
+        const xmlContent = generateTickerXML(existingItems, category);
         fs.writeFileSync(filepath, xmlContent);
         
         res.json({ message: 'XML saved successfully', filename });

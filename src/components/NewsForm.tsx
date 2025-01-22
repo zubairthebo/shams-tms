@@ -45,9 +45,6 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
         }
 
         try {
-            onSubmit({ text, category });
-            setText("");
-
             const token = localStorage.getItem('token');
             const response = await fetch('http://localhost:3000/api/save-xml', {
                 method: 'POST',
@@ -58,11 +55,15 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
                 body: JSON.stringify({ text, category }),
             });
 
+            const data = await response.json();
+            
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to save XML');
+                throw new Error(data.error || 'Failed to save XML');
             }
 
+            onSubmit({ text, category });
+            setText("");
+            
             toast({
                 title: language === 'ar' ? "تم بنجاح" : "Success",
                 description: language === 'ar' ? "تمت إضافة الخبر" : "News item added successfully",
