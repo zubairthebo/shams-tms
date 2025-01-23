@@ -1,28 +1,19 @@
-import { initializeDatabase, seedDatabase, clearDatabase } from '../db/index.js';
+import { initializeDatabase, seedDatabase } from '../db/index.js';
 
-const command = process.argv[2];
-
-const runCommand = async () => {
+const setup = async () => {
     try {
-        switch (command) {
-            case 'init':
-                await initializeDatabase();
-                break;
-            case 'seed':
-                await seedDatabase();
-                break;
-            case 'clear':
-                await clearDatabase();
-                break;
-            default:
-                console.log('Available commands: init, seed, clear');
-                console.log('Usage: npm run db:init|db:seed|db:clear');
-        }
+        console.log('Initializing database...');
+        await initializeDatabase();
+        
+        console.log('Seeding database...');
+        await seedDatabase();
+        
+        console.log('Database setup completed successfully');
         process.exit(0);
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error during database setup:', error);
         process.exit(1);
     }
 };
 
-runCommand();
+setup();

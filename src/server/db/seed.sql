@@ -10,10 +10,10 @@ VALUES (
 ) ON DUPLICATE KEY UPDATE id=id;
 
 -- Insert some default categories
-INSERT INTO categories (identifier, name_ar, name_en, main_scene_name, opener_template_name, template_name) VALUES
-    ('news', 'أخبار', 'News', 'NEWS_SCENE', 'NEWS_OPENER', 'NEWS_TEMPLATE'),
-    ('sports', 'رياضة', 'Sports', 'SPORTS_SCENE', 'SPORTS_OPENER', 'SPORTS_TEMPLATE'),
-    ('weather', 'طقس', 'Weather', 'WEATHER_SCENE', 'WEATHER_OPENER', 'WEATHER_TEMPLATE')
+INSERT INTO categories (identifier, name_ar, name_en) VALUES
+    ('news', 'أخبار', 'News'),
+    ('sports', 'رياضة', 'Sports'),
+    ('weather', 'طقس', 'Weather')
 ON DUPLICATE KEY UPDATE id=id;
 
 -- Assign all categories to admin user
