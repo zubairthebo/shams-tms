@@ -6,46 +6,33 @@ export const Footer = () => {
   const { language } = useLanguage();
   const currentYear = new Date().getFullYear();
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
       const response = await fetch('http://localhost:3000/api/settings');
+      if (!response.ok) throw new Error('Failed to fetch settings');
       return response.json();
-    },
-    initialData: {
-      companyName: 'ShamsTV',
-      website: 'https://shams.tv',
-      email: 'info@shams.tv',
-      facebook: '',
-      twitter: '',
-      instagram: '',
-      linkedin: ''
     }
   });
 
-  if (isLoading || !settings) {
-    return (
-      <footer className="bg-gray-100 py-6 mt-auto">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        </div>
-      </footer>
-    );
+  if (!settings) {
+    return null;
   }
 
   return (
-    <footer className="bg-gray-100 py-6 mt-auto">
+    <footer className="bg-primary text-primary-foreground py-6 mt-auto">
       <div className="container mx-auto px-4">
         <div className={`text-center ${language === 'ar' ? 'rtl' : 'ltr'}`}>
-          <p className="text-gray-600">
+          <p className="text-lg font-medium mb-2">
+            {settings.companyName}
+          </p>
+          <p className="text-sm opacity-80">
             {language === 'ar' 
               ? `© ${currentYear} ${settings.companyName}. جميع الحقوق محفوظة`
               : `© ${currentYear} ${settings.companyName}. All rights reserved`
             }
           </p>
-          <div className="text-gray-500 mt-2">
+          <div className="text-sm opacity-80 mt-2">
             <p>
               {language === 'ar'
                 ? `للتواصل: ${settings.email}`
@@ -56,7 +43,7 @@ export const Footer = () => {
               href={settings.website}
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="hover:underline"
             >
               {settings.website}
             </a>
@@ -67,9 +54,9 @@ export const Footer = () => {
                 href={settings.facebook} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-primary hover:text-primary-dark"
+                className="hover:text-secondary transition-colors"
               >
-                <Facebook className="w-6 h-6" />
+                <Facebook className="w-5 h-5" />
               </a>
             )}
             {settings.twitter && (
@@ -77,9 +64,9 @@ export const Footer = () => {
                 href={settings.twitter} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-primary hover:text-primary-dark"
+                className="hover:text-secondary transition-colors"
               >
-                <Twitter className="w-6 h-6" />
+                <Twitter className="w-5 h-5" />
               </a>
             )}
             {settings.instagram && (
@@ -87,9 +74,9 @@ export const Footer = () => {
                 href={settings.instagram} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-primary hover:text-primary-dark"
+                className="hover:text-secondary transition-colors"
               >
-                <Instagram className="w-6 h-6" />
+                <Instagram className="w-5 h-5" />
               </a>
             )}
             {settings.linkedin && (
@@ -97,9 +84,9 @@ export const Footer = () => {
                 href={settings.linkedin} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-primary hover:text-primary-dark"
+                className="hover:text-secondary transition-colors"
               >
-                <Linkedin className="w-6 h-6" />
+                <Linkedin className="w-5 h-5" />
               </a>
             )}
           </div>
