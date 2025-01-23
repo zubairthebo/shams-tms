@@ -25,12 +25,18 @@ export const Header = () => {
     navigate('/reset-password');
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+    // Force theme update
+    document.documentElement.classList.toggle('dark');
+  };
+
   return (
     <header className="bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-4 hover:opacity-80 transition-opacity">
           {settings?.logo ? (
-            <img src={settings.logo} alt={settings?.companyName || 'Logo'} className="h-8" />
+            <img src={settings.logo} alt={settings?.companyName || 'Logo'} className="h-10" />
           ) : (
             <span className="text-xl font-bold">{settings?.companyName || 'ShamsTV'}</span>
           )}
@@ -38,34 +44,36 @@ export const Header = () => {
             {settings?.companyName}
           </span>
         </Link>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           {user && (
             <>
-              <Button variant="ghost" size="icon" onClick={handlePasswordReset}>
-                <Key className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={handlePasswordReset} className="p-2">
+                <Key className="h-6 w-6" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={logout}>
-                <LogOut className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={logout} className="p-2">
+                <LogOut className="h-6 w-6" />
               </Button>
             </>
           )}
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={toggleTheme}
+            className="p-2"
           >
             {theme === 'dark' ? (
-              <Sun className="h-5 w-5" />
+              <Sun className="h-6 w-6" />
             ) : (
-              <Moon className="h-5 w-5" />
+              <Moon className="h-6 w-6" />
             )}
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+            className="p-2"
           >
-            <Languages className="h-5 w-5" />
+            <Languages className="h-6 w-6" />
           </Button>
         </div>
       </div>

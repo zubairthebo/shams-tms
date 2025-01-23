@@ -10,9 +10,6 @@ const __dirname = dirname(__filename);
 export const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
 export const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 export const XML_DIR = path.join(__dirname, '..', '..', 'xml');
-export const USERS_FILE = path.join(DATA_DIR, 'users.json');
-export const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json');
-export const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 export const UPLOADS_DIR = path.join(__dirname, '..', '..', 'public', 'uploads');
 
 // Ensure directories exist
@@ -22,49 +19,68 @@ export const UPLOADS_DIR = path.join(__dirname, '..', '..', 'public', 'uploads')
     }
 });
 
-// Initialize users.json if it doesn't exist
-if (!fs.existsSync(USERS_FILE)) {
-    const defaultUsers = {
-        users: [{
-            username: 'admin',
-            password: bcrypt.hashSync('admin123', 10),
-            role: 'admin',
-            assignedCategories: []
-        }]
-    };
-    fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
-}
+// Database tables configuration
+export const USERS_TABLE = {
+    name: 'users',
+    schema: `
+        CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            name VARCHAR(100),
+            designation VARCHAR(100),
+            email VARCHAR(100),
+            role ENUM('admin', 'user') DEFAULT 'user',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `
+};
 
-// Initialize categories.json if it doesn't exist
-if (!fs.existsSync(CATEGORIES_FILE)) {
-    const defaultCategories = {
-        sports: {
-            ar: "رياضة",
-            en: "Sports"
-        },
-        politics: {
-            ar: "سياسة",
-            en: "Politics"
-        },
-        economy: {
-            ar: "اقتصاد",
-            en: "Economy"
-        }
-    };
-    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(defaultCategories, null, 2));
-}
+export const USER_CATEGORIES = {
+    name: 'user_categories',
+    schema: `
+        CREATE TABLE IF NOT EXISTS user_categories (
+            user_id INT,
+            category_id INT,
+            PRIMARY KEY (user_id, category_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+        )
+    `
+};
 
-// Initialize settings.json if it doesn't exist
-if (!fs.existsSync(SETTINGS_FILE)) {
-    const defaultSettings = {
-        companyName: 'ShamsTV',
-        logo: '',
-        favicon: '',
-        website: 'https://shams.tv',
-        email: 'info@shams.tv'
-    };
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2));
-}
+export const CATEGORIES_TABLE = {
+    name: 'categories',
+    schema: `
+        CREATE TABLE IF NOT EXISTS categories (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            identifier VARCHAR(50) UNIQUE NOT NULL,
+            name_ar VARCHAR(100) NOT NULL,
+            name_en VARCHAR(100) NOT NULL,
+            main_scene_name VARCHAR(100) DEFAULT 'MAIN_TICKER',
+            opener_template_name VARCHAR(100),
+            template_name VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `
+};
+
+export const SETTINGS_TABLE = {
+    name: 'settings',
+    schema: `
+        CREATE TABLE IF NOT EXISTS settings (
+            id INT PRIMARY KEY DEFAULT 1,
+            company_name VARCHAR(100),
+            logo_path VARCHAR(255),
+            favicon_path VARCHAR(255),
+            website_url VARCHAR(255),
+            email VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            CHECK (id = 1)
+        )
+    `
+};
 
 export const NEWS_TABLE = {
     name: 'news_items',
@@ -72,9 +88,11 @@ export const NEWS_TABLE = {
         CREATE TABLE IF NOT EXISTS news_items (
             id VARCHAR(36) PRIMARY KEY,
             text TEXT NOT NULL,
-            category VARCHAR(50) NOT NULL,
+            category_id INT NOT NULL,
+            created_by INT NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            created_by VARCHAR(50) NOT NULL
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
         )
     `
 };
