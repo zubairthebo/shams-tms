@@ -10,22 +10,36 @@ type NewsItem = {
   timestamp: Date;
 };
 
-export const generateXml = async (items: NewsItem[], category: string) => {
+export const generateXml = async (items: NewsItem[], categories: string[]) => {
   try {
-    const response = await fetch('http://localhost:3000/api/save-xml', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify({ 
-        items,
-        category
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to save XML');
+    // Group items by category
+    const groupedItems = items.reduce((acc, item) => {
+      if (categories.includes(item.category) || categories.length === 0) {
+        if (!acc[item.category]) {
+          acc[item.category] = [];
+        }
+        acc[item.category].push(item);
+      }
+      return acc;
+    }, {} as Record<string, NewsItem[]>);
+
+    // Generate XML for each category
+    for (const [category, categoryItems] of Object.entries(groupedItems)) {
+      const response = await fetch('http://localhost:3000/api/save-xml', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ 
+          text: categoryItems[categoryItems.length - 1].text,
+          category
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save XML');
+      }
     }
   } catch (error) {
     console.error('Error saving XML:', error);
@@ -45,19 +59,7 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
 
   const handleGenerateXml = async () => {
     try {
-      // Group items by category
-      const groupedItems = filteredItems.reduce((acc, item) => {
-        if (!acc[item.category]) {
-          acc[item.category] = [];
-        }
-        acc[item.category].push(item);
-        return acc;
-      }, {} as Record<string, NewsItem[]>);
-
-      // Generate XML for each category
-      for (const [category, categoryItems] of Object.entries(groupedItems)) {
-        await generateXml(categoryItems, category);
-      }
+      await generateXml(filteredItems, user?.assignedCategories || []);
       
       toast({
         title: language === 'ar' ? "تم إنشاء ملفات XML" : "XML Files Created",
