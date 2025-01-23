@@ -4,6 +4,7 @@ import dbPool from '../db/index.js';
 
 const router = express.Router();
 
+// Get all categories
 router.get('/categories', async (req, res) => {
     try {
         const [categories] = await dbPool.query(`
@@ -31,6 +32,34 @@ router.get('/categories', async (req, res) => {
     }
 });
 
+// Create new category (admin only)
+router.post('/categories', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    try {
+        const { identifier, ar, en, mainSceneName, openerTemplateName, templateName } = req.body;
+        
+        await dbPool.query(`
+            INSERT INTO categories (
+                identifier, 
+                name_ar, 
+                name_en, 
+                main_scene_name, 
+                opener_template_name, 
+                template_name
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        `, [identifier, ar, en, mainSceneName, openerTemplateName, templateName]);
+        
+        res.status(201).json({ message: 'Category created successfully' });
+    } catch (error) {
+        console.error('Error creating category:', error);
+        res.status(500).json({ error: 'Failed to create category' });
+    }
+});
+
+// Update category (admin only)
 router.put('/categories/:id', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -58,32 +87,7 @@ router.put('/categories/:id', authenticateToken, async (req, res) => {
     }
 });
 
-router.post('/categories', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    try {
-        const { identifier, ar, en, mainSceneName, openerTemplateName, templateName } = req.body;
-        
-        await dbPool.query(`
-            INSERT INTO categories (
-                identifier, 
-                name_ar, 
-                name_en, 
-                main_scene_name, 
-                opener_template_name, 
-                template_name
-            ) VALUES (?, ?, ?, ?, ?, ?)
-        `, [identifier, ar, en, mainSceneName, openerTemplateName, templateName]);
-        
-        res.status(201).json({ message: 'Category created successfully' });
-    } catch (error) {
-        console.error('Error creating category:', error);
-        res.status(500).json({ error: 'Failed to create category' });
-    }
-});
-
+// Delete category (admin only)
 router.delete('/categories/:id', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
