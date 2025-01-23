@@ -65,3 +65,16 @@ if (!fs.existsSync(SETTINGS_FILE)) {
     };
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2));
 }
+
+export const NEWS_TABLE = {
+    name: 'news_items',
+    schema: `
+        CREATE TABLE IF NOT EXISTS news_items (
+            id VARCHAR(36) PRIMARY KEY,
+            text TEXT NOT NULL,
+            category VARCHAR(50) NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_by VARCHAR(50) NOT NULL
+        )
+    `
+};

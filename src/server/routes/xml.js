@@ -3,8 +3,17 @@ import { authenticateToken } from '../auth.js';
 import { XML_DIR } from '../config.js';
 import fs from 'fs';
 import path from 'path';
+import mysql from 'mysql2/promise';
 
 const router = express.Router();
+
+// Database connection
+const pool = mysql.createPool({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'news_ticker'
+});
 
 const generateTickerXML = (items, category) => {
     const categoryUpper = category.toUpperCase();
@@ -36,56 +45,120 @@ const generateTickerXML = (items, category) => {
 </tickerfeed>`;
 };
 
-router.post('/save-xml', authenticateToken, (req, res) => {
+// Create news item
+router.post('/news', authenticateToken, async (req, res) => {
     try {
         const { text, category } = req.body;
+        const id = crypto.randomUUID();
         
-        if (!text || !category) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
+        const connection = await pool.getConnection();
+        await connection.execute(
+            'INSERT INTO news_items (id, text, category, created_by) VALUES (?, ?, ?, ?)',
+            [id, text, category, req.user.username]
+        );
+        connection.release();
 
-        if (req.user.role !== 'admin' && !req.user.assignedCategories.includes(category)) {
-            return res.status(403).json({ error: 'Unauthorized category access' });
-        }
-
-        if (!fs.existsSync(XML_DIR)) {
-            fs.mkdirSync(XML_DIR, { recursive: true });
-        }
-
-        const filename = `${category}.xml`;
-        const filepath = path.join(XML_DIR, filename);
+        // Get all items for this category and generate XML
+        const [items] = await pool.execute(
+            'SELECT * FROM news_items WHERE category = ? ORDER BY timestamp',
+            [category]
+        );
         
-        let existingItems = [];
-        if (fs.existsSync(filepath)) {
-            const xmlContent = fs.readFileSync(filepath, 'utf-8');
-            const matches = xmlContent.match(/<field name="1">(.*?)<\/field>/g);
-            if (matches) {
-                existingItems = matches.map(match => ({
-                    text: match.replace(/<field name="1">(.*?)<\/field>/, '$1')
-                        .replace(/&lt;/g, '<')
-                        .replace(/&gt;/g, '>')
-                        .replace(/&amp;/g, '&')
-                        .replace(/&apos;/g, "'")
-                        .replace(/&quot;/g, '"'),
-                    timestamp: new Date(),
-                    category
-                }));
-            }
-        }
-
-        existingItems.push({
-            text,
-            timestamp: new Date(),
-            category
-        });
-
-        const xmlContent = generateTickerXML(existingItems, category);
+        const xmlContent = generateTickerXML(items, category);
+        const filepath = path.join(XML_DIR, `${category}.xml`);
         fs.writeFileSync(filepath, xmlContent);
-        
-        res.json({ message: 'XML saved successfully', filename });
+
+        res.json({ id, message: 'News item created successfully' });
     } catch (error) {
-        console.error('Error saving XML:', error);
-        res.status(500).json({ error: 'Failed to save XML' });
+        console.error('Error creating news:', error);
+        res.status(500).json({ error: 'Failed to create news item' });
+    }
+});
+
+// Get news items
+router.get('/news', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.execute(
+            'SELECT * FROM news_items ORDER BY timestamp DESC'
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching news:', error);
+        res.status(500).json({ error: 'Failed to fetch news items' });
+    }
+});
+
+// Update news item
+router.put('/news/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { text } = req.body;
+
+        const connection = await pool.getConnection();
+        await connection.execute(
+            'UPDATE news_items SET text = ? WHERE id = ?',
+            [text, id]
+        );
+        connection.release();
+
+        // Get category for this item
+        const [rows] = await pool.execute(
+            'SELECT category FROM news_items WHERE id = ?',
+            [id]
+        );
+        const category = rows[0].category;
+
+        // Regenerate XML for this category
+        const [items] = await pool.execute(
+            'SELECT * FROM news_items WHERE category = ? ORDER BY timestamp',
+            [category]
+        );
+        
+        const xmlContent = generateTickerXML(items, category);
+        const filepath = path.join(XML_DIR, `${category}.xml`);
+        fs.writeFileSync(filepath, xmlContent);
+
+        res.json({ message: 'News item updated successfully' });
+    } catch (error) {
+        console.error('Error updating news:', error);
+        res.status(500).json({ error: 'Failed to update news item' });
+    }
+});
+
+// Delete news item
+router.delete('/news/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Get category before deleting
+        const [rows] = await pool.execute(
+            'SELECT category FROM news_items WHERE id = ?',
+            [id]
+        );
+        const category = rows[0].category;
+
+        // Delete the item
+        const connection = await pool.getConnection();
+        await connection.execute(
+            'DELETE FROM news_items WHERE id = ?',
+            [id]
+        );
+        connection.release();
+
+        // Regenerate XML for this category
+        const [items] = await pool.execute(
+            'SELECT * FROM news_items WHERE category = ? ORDER BY timestamp',
+            [category]
+        );
+        
+        const xmlContent = generateTickerXML(items, category);
+        const filepath = path.join(XML_DIR, `${category}.xml`);
+        fs.writeFileSync(filepath, xmlContent);
+
+        res.json({ message: 'News item deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting news:', error);
+        res.status(500).json({ error: 'Failed to delete news item' });
     }
 });
 
