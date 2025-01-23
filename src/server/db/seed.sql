@@ -1,12 +1,14 @@
--- Insert admin user (password: admin123)
-INSERT INTO users (username, password, name, designation, email, role) VALUES
-('admin', '$2a$10$mLZKxmxXk4bRI9AZKtQYYuqhwE7OYq9BkYVOzPyxqhEHJNzqkZGYy', 'Admin User', 'Administrator', 'admin@example.com', 'admin');
-
--- Insert sample categories
+-- Insert initial categories
 INSERT INTO categories (identifier, name_ar, name_en, main_scene_name, opener_template_name, template_name) VALUES
-('news', 'أخبار', 'News', 'MAIN_TICKER', 'TICKER_NEWS_START', 'TICKER_NEWS'),
-('sports', 'رياضة', 'Sports', 'MAIN_TICKER', 'TICKER_SPORTS_START', 'TICKER_SPORTS');
+('politics', 'سياسة', 'Politics', 'MAIN_TICKER', 'TICKER_POLITICS_START', 'TICKER_POLITICS'),
+('sports', 'رياضة', 'Sports', 'MAIN_TICKER', 'TICKER_SPORTS_START', 'TICKER_SPORTS'),
+('economy', 'اقتصاد', 'Economy', 'MAIN_TICKER', 'TICKER_ECONOMY_START', 'TICKER_ECONOMY'),
+('technology', 'تكنولوجيا', 'Technology', 'MAIN_TICKER', 'TICKER_TECH_START', 'TICKER_TECH');
 
--- Insert sample settings
+-- Insert default admin user
+INSERT INTO users (username, password, role) VALUES
+('admin', '$2a$10$your_hashed_password', 'admin');
+
+-- Insert default settings
 INSERT INTO settings (company_name, website_url, email) VALUES
 ('ShamsTV', 'https://shams.tv', 'info@shams.tv');
