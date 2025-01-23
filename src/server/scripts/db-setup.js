@@ -16,6 +16,7 @@ const runCommand = async () => {
                 break;
             default:
                 console.log('Available commands: init, seed, clear');
+                console.log('Usage: npm run db:init|db:seed|db:clear');
         }
         process.exit(0);
     } catch (error) {
