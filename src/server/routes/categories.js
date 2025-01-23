@@ -4,30 +4,23 @@ import dbPool from '../db/index.js';
 
 const router = express.Router();
 
-// Get all categories
 router.get('/categories', async (req, res) => {
     try {
         const [categories] = await dbPool.query(`
             SELECT 
-                id,
                 identifier,
                 name_ar as ar,
                 name_en as en,
-                main_scene_name,
-                opener_template_name,
-                template_name
+                main_scene_name as mainSceneName,
+                opener_template_name as openerTemplateName,
+                template_name as templateName
             FROM categories
         `);
         
-        // Transform the data to match the expected format
+        // Transform array to object with identifier as key
         const formattedCategories = categories.reduce((acc, category) => {
-            acc[category.identifier] = {
-                ar: category.ar,
-                en: category.en,
-                mainSceneName: category.main_scene_name,
-                openerTemplateName: category.opener_template_name,
-                templateName: category.template_name
-            };
+            const { identifier, ...rest } = category;
+            acc[identifier] = rest;
             return acc;
         }, {});
 
@@ -38,7 +31,6 @@ router.get('/categories', async (req, res) => {
     }
 });
 
-// Update category
 router.put('/categories/:id', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -66,7 +58,6 @@ router.put('/categories/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// Create category
 router.post('/categories', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -93,7 +84,6 @@ router.post('/categories', authenticateToken, async (req, res) => {
     }
 });
 
-// Delete category
 router.delete('/categories/:id', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });

@@ -1,78 +1,45 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import fs from 'fs';
-import { JWT_SECRET, USERS_FILE } from './config.js';
+import { JWT_SECRET } from './config.js';
+import dbPool from './db/index.js';
 
-export const authenticateToken = (req, res, next) => {
+export const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) return res.status(401).json({ error: 'Access denied' });
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Invalid token' });
-        req.user = user;
-        next();
-    });
-};
-
-export const handleLogin = (req, res) => {
-    const { username, password } = req.body;
-    console.log('Login attempt:', { username });
-
     try {
-        // Ensure users.json exists and is readable
-        if (!fs.existsSync(USERS_FILE)) {
-            console.log('Creating default users file');
-            const defaultUsers = {
-                users: [{
-                    username: 'admin',
-                    password: bcrypt.hashSync('admin123', 10),
-                    role: 'admin',
-                    assignedCategories: []
-                }]
-            };
-            fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
-        }
-
-        const userData = JSON.parse(fs.readFileSync(USERS_FILE));
-        console.log('Found users:', userData.users.map(u => u.username));
+        const decoded = jwt.verify(token, JWT_SECRET);
         
-        const user = userData.users.find(u => u.username === username);
-        
-        if (!user) {
-            console.log('Login failed: User not found');
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const isValidPassword = bcrypt.compareSync(password, user.password);
-        console.log('Password validation:', isValidPassword ? 'success' : 'failed');
-        
-        if (!isValidPassword) {
-            console.log('Login failed: Invalid password');
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const token = jwt.sign(
-            { 
-                username: user.username, 
-                role: user.role,
-                assignedCategories: user.assignedCategories 
-            }, 
-            JWT_SECRET
+        // Get fresh user data from database
+        const [users] = await dbPool.query(
+            'SELECT id, username, role FROM users WHERE id = ?',
+            [decoded.id]
         );
 
-        console.log('Login successful');
-        res.json({ 
-            token, 
-            user: { 
-                username: user.username, 
-                role: user.role,
-                assignedCategories: user.assignedCategories 
-            }
-        });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Server error during login' });
+        if (users.length === 0) {
+            return res.status(403).json({ error: 'User not found' });
+        }
+
+        const user = users[0];
+
+        // Get assigned categories
+        const [categories] = await dbPool.query(`
+            SELECT c.identifier 
+            FROM categories c 
+            INNER JOIN user_categories uc ON c.id = uc.category_id 
+            WHERE uc.user_id = ?
+        `, [user.id]);
+
+        req.user = {
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            assignedCategories: categories.map(c => c.identifier)
+        };
+        
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: 'Invalid token' });
     }
 };
