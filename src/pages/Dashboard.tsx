@@ -34,14 +34,13 @@ const Dashboard = () => {
     const updatedNews = [...newsItems, newItem];
     setNewsItems(updatedNews);
     localStorage.setItem('newsItems', JSON.stringify(updatedNews));
-    generateXml(updatedNews);
+    generateXml(updatedNews, user?.assignedCategories || []);
   };
 
   const handleDeleteNews = (id: string) => {
     const itemToDelete = newsItems.find(item => item.id === id);
     if (!itemToDelete) return;
 
-    // Check if user has permission to delete this category
     if (user?.role !== 'admin' && !user?.assignedCategories.includes(itemToDelete.category)) {
       return;
     }

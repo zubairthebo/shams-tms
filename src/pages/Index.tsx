@@ -33,7 +33,7 @@ const Index = () => {
     const updatedNews = [...newsItems, newItem];
     setNewsItems(updatedNews);
     localStorage.setItem('newsItems', JSON.stringify(updatedNews));
-    generateXml(updatedNews);
+    generateXml(updatedNews, user?.assignedCategories || []);
   };
 
   const handleDeleteNews = (id: string) => {
