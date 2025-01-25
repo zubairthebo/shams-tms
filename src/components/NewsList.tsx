@@ -15,7 +15,13 @@ type NewsItem = {
   timestamp: string;
 };
 
-export const NewsList = () => {
+interface NewsListProps {
+  items?: NewsItem[];
+  onDelete?: (id: string) => void;
+  onEdit?: (id: string, newText: string) => void;
+}
+
+export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -31,7 +37,7 @@ export const NewsList = () => {
     }
   });
 
-  const { data: items = [] } = useQuery({
+  const { data: newsItems = [] } = useQuery({
     queryKey: ['news'],
     queryFn: async () => {
       const response = await fetch('http://localhost:3000/api/news', {
@@ -104,16 +110,17 @@ export const NewsList = () => {
   };
 
   const canManageCategory = (category: string) => {
-    return user?.role === 'admin' || user?.assignedCategories.includes(category);
+    return user?.role === 'admin' || user?.assignedCategories?.includes(category);
   };
 
-  const groupedItems = items.reduce((acc, item) => {
+  const displayItems = items.length > 0 ? items : newsItems;
+  const groupedItems = displayItems.reduce((acc: Record<string, NewsItem[]>, item) => {
     if (!acc[item.category]) {
       acc[item.category] = [];
     }
     acc[item.category].push(item);
     return acc;
-  }, {} as Record<string, NewsItem[]>);
+  }, {});
 
   return (
     <div className={`space-y-6 ${language === 'ar' ? 'rtl' : 'ltr'}`}>
