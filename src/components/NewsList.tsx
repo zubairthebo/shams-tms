@@ -5,26 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Trash2, Edit2, Check, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 
 type NewsItem = {
   id: string;
   text: string;
   category: string;
-  timestamp: Date;
+  timestamp: string;
 };
 
-export const NewsList = ({ 
-  items, 
-  onDelete,
-  onEdit
-}: { 
-  items: NewsItem[];
-  onDelete: (id: string) => void;
-  onEdit: (id: string, newText: string) => void;
-}) => {
+export const NewsList = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
@@ -35,14 +30,62 @@ export const NewsList = ({
       return response.json();
     }
   });
-  
-  const groupedItems = items.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
+
+  const { data: items = [] } = useQuery({
+    queryKey: ['news'],
+    queryFn: async () => {
+      const response = await fetch('http://localhost:3000/api/news', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch news');
+      return response.json();
     }
-    acc[item.category].push(item);
-    return acc;
-  }, {} as Record<string, NewsItem[]>);
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`http://localhost:3000/api/news/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to delete news');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['news'] });
+      toast({
+        title: language === 'ar' ? "تم بنجاح" : "Success",
+        description: language === 'ar' ? "تم حذف الخبر" : "News item deleted successfully",
+      });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, text }: { id: string; text: string }) => {
+      const response = await fetch(`http://localhost:3000/api/news/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ text })
+      });
+      if (!response.ok) throw new Error('Failed to update news');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['news'] });
+      setEditingId(null);
+      toast({
+        title: language === 'ar' ? "تم بنجاح" : "Success",
+        description: language === 'ar' ? "تم تحديث الخبر" : "News item updated successfully",
+      });
+    }
+  });
 
   const handleStartEdit = (item: NewsItem) => {
     setEditingId(item.id);
@@ -51,8 +94,7 @@ export const NewsList = ({
 
   const handleSaveEdit = () => {
     if (editingId) {
-      onEdit(editingId, editText);
-      setEditingId(null);
+      updateMutation.mutate({ id: editingId, text: editText });
     }
   };
 
@@ -65,11 +107,13 @@ export const NewsList = ({
     return user?.role === 'admin' || user?.assignedCategories.includes(category);
   };
 
-  const getCategoryLabel = (categoryId: string) => {
-    return categories[categoryId] 
-      ? categories[categoryId][language]
-      : categoryId; // Fallback to category ID if not found
-  };
+  const groupedItems = items.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {} as Record<string, NewsItem[]>);
 
   return (
     <div className={`space-y-6 ${language === 'ar' ? 'rtl' : 'ltr'}`}>
@@ -77,7 +121,7 @@ export const NewsList = ({
         <Card key={category}>
           <CardHeader>
             <CardTitle>
-              {getCategoryLabel(category)}
+              {categories[category]?.[language] || category}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -125,7 +169,7 @@ export const NewsList = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => onDelete(item.id)}
+                              onClick={() => deleteMutation.mutate(item.id)}
                               className="text-red-500 hover:text-red-700"
                             >
                               <Trash2 className="h-4 w-4" />

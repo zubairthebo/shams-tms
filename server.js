@@ -7,6 +7,7 @@ import { dirname } from 'path';
 import { authenticateToken, handleLogin } from './src/server/auth.js';
 import { UPLOADS_DIR } from './src/server/config.js';
 import dbPool from './src/server/db/index.js';
+import newsRoutes from './src/server/routes/news.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,6 +34,7 @@ const upload = multer({ storage: storage });
 
 // Routes
 app.post('/api/login', handleLogin);
+app.use('/api', newsRoutes);
 
 // Categories endpoints
 app.get('/api/categories', async (req, res) => {
@@ -96,12 +98,12 @@ app.put('/api/settings', authenticateToken, upload.fields([
         }
 
         await dbPool.query(`
-            INSERT INTO settings (id, company_name, logo_path, website_url, email)
+            INSERT INTO settings (id, company_name, logo_path, website, email)
             VALUES (1, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
             company_name = VALUES(company_name),
             logo_path = VALUES(logo_path),
-            website_url = VALUES(website_url),
+            website = VALUES(website),
             email = VALUES(email)
         `, [settings.companyName, settings.logo, settings.website, settings.email]);
 

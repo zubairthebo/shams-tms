@@ -5,18 +5,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const MAX_CHARS = 75;
 
-export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; category: string }) => void }) => {
+export const NewsForm = () => {
     const [text, setText] = useState("");
     const [category, setCategory] = useState("");
     const { toast } = useToast();
     const { language } = useLanguage();
     const { user } = useAuth();
+    const queryClient = useQueryClient();
 
-    const { data: categories = {}, refetch: refetchCategories } = useQuery({
+    const { data: categories = {} } = useQuery({
         queryKey: ['categories'],
         queryFn: async () => {
             const response = await fetch('http://localhost:3000/api/categories');
@@ -24,10 +25,45 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
         }
     });
 
+    const addNewsMutation = useMutation({
+        mutationFn: async (data: { text: string; category: string }) => {
+            const response = await fetch('http://localhost:3000/api/news', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(data),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to save news');
+            }
+            
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['news'] });
+            setText("");
+            setCategory("");
+            toast({
+                title: language === 'ar' ? "تم بنجاح" : "Success",
+                description: language === 'ar' ? "تمت إضافة الخبر" : "News item added successfully",
+            });
+        },
+        onError: (error) => {
+            console.error('Error saving news:', error);
+            toast({
+                title: language === 'ar' ? "خطأ" : "Error",
+                description: language === 'ar' ? "فشل في حفظ الخبر" : "Failed to save news",
+                variant: "destructive",
+            });
+        }
+    });
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Validate inputs
         if (!text.trim() || !category) {
             toast({
                 title: language === 'ar' ? "خطأ" : "Error",
@@ -37,7 +73,6 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
             return;
         }
 
-        // Validate category access
         if (user?.role !== 'admin' && !user?.assignedCategories.includes(category)) {
             toast({
                 title: language === 'ar' ? "خطأ" : "Error",
@@ -47,42 +82,7 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
             return;
         }
 
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/save-xml', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    text: text.trim(),
-                    category: category
-                }),
-            });
-
-            const data = await response.json();
-            
-            if (!response.ok) {
-                console.error('Save XML Error:', data); // Debug log
-                throw new Error(data.error || 'Failed to save XML');
-            }
-
-            onSubmit({ text, category });
-            setText("");
-            
-            toast({
-                title: language === 'ar' ? "تم بنجاح" : "Success",
-                description: language === 'ar' ? "تمت إضافة الخبر" : "News item added successfully",
-            });
-        } catch (error) {
-            console.error('Error saving news:', error);
-            toast({
-                title: language === 'ar' ? "خطأ" : "Error",
-                description: language === 'ar' ? "فشل في حفظ الخبر" : "Failed to save news",
-                variant: "destructive",
-            });
-        }
+        addNewsMutation.mutate({ text: text.trim(), category });
     };
 
     const availableCategories = user?.role === 'admin' 
@@ -130,7 +130,11 @@ export const NewsForm = ({ onSubmit }: { onSubmit: (data: { text: string; catego
                     </SelectContent>
                 </Select>
             </div>
-            <Button type="submit" className="w-full">
+            <Button 
+                type="submit" 
+                className="w-full"
+                disabled={addNewsMutation.isPending}
+            >
                 {language === 'ar' ? 'إضافة الخبر' : 'Add News'}
             </Button>
         </form>
