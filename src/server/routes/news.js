@@ -45,13 +45,13 @@ router.post('/news', authenticateToken, async (req, res) => {
             [newsId, text, category, req.user.id]
         );
 
-        const [insertedItem] = await dbPool.query(
-            `SELECT n.*, c.identifier as category 
-             FROM news_items n 
-             JOIN categories c ON n.category_id = c.identifier 
-             WHERE n.id = ?`,
-            [newsId]
-        );
+        // Fetch the newly created item with its category
+        const [insertedItem] = await dbPool.query(`
+            SELECT n.*, c.identifier as category 
+            FROM news_items n 
+            JOIN categories c ON n.category_id = c.identifier 
+            WHERE n.id = ?
+        `, [newsId]);
 
         if (insertedItem.length === 0) {
             return res.status(500).json({ error: 'Failed to create news item' });
@@ -70,14 +70,13 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { text } = req.body;
 
-        // Check if news item exists
-        const [newsItem] = await dbPool.query(
-            `SELECT n.*, c.identifier as category 
-             FROM news_items n 
-             JOIN categories c ON n.category_id = c.identifier 
-             WHERE n.id = ?`,
-            [id]
-        );
+        // Check if news item exists and get its category
+        const [newsItem] = await dbPool.query(`
+            SELECT n.*, c.identifier as category 
+            FROM news_items n 
+            JOIN categories c ON n.category_id = c.identifier 
+            WHERE n.id = ?
+        `, [id]);
 
         if (newsItem.length === 0) {
             return res.status(404).json({ error: 'News item not found' });
@@ -85,12 +84,12 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
 
         // Check user permissions
         if (req.user.role !== 'admin') {
-            const [hasAccess] = await dbPool.query(
-                `SELECT 1 FROM user_categories uc 
-                 JOIN categories c ON uc.category_id = c.id 
-                 WHERE uc.user_id = ? AND c.identifier = ?`,
-                [req.user.id, newsItem[0].category]
-            );
+            const [hasAccess] = await dbPool.query(`
+                SELECT 1 FROM user_categories uc 
+                JOIN categories c ON uc.category_id = c.id 
+                WHERE uc.user_id = ? AND c.identifier = ?
+            `, [req.user.id, newsItem[0].category]);
+
             if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
             }
@@ -102,14 +101,13 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
             [text, id]
         );
 
-        // Get updated item
-        const [updatedItem] = await dbPool.query(
-            `SELECT n.*, c.identifier as category 
-             FROM news_items n 
-             JOIN categories c ON n.category_id = c.identifier 
-             WHERE n.id = ?`,
-            [id]
-        );
+        // Get the updated item
+        const [updatedItem] = await dbPool.query(`
+            SELECT n.*, c.identifier as category 
+            FROM news_items n 
+            JOIN categories c ON n.category_id = c.identifier 
+            WHERE n.id = ?
+        `, [id]);
 
         res.json(updatedItem[0]);
     } catch (error) {
@@ -123,14 +121,13 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if news item exists
-        const [newsItem] = await dbPool.query(
-            `SELECT n.*, c.identifier as category 
-             FROM news_items n 
-             JOIN categories c ON n.category_id = c.identifier 
-             WHERE n.id = ?`,
-            [id]
-        );
+        // Check if news item exists and get its category
+        const [newsItem] = await dbPool.query(`
+            SELECT n.*, c.identifier as category 
+            FROM news_items n 
+            JOIN categories c ON n.category_id = c.identifier 
+            WHERE n.id = ?
+        `, [id]);
 
         if (newsItem.length === 0) {
             return res.status(404).json({ error: 'News item not found' });
@@ -138,12 +135,12 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
 
         // Check user permissions
         if (req.user.role !== 'admin') {
-            const [hasAccess] = await dbPool.query(
-                `SELECT 1 FROM user_categories uc 
-                 JOIN categories c ON uc.category_id = c.id 
-                 WHERE uc.user_id = ? AND c.identifier = ?`,
-                [req.user.id, newsItem[0].category]
-            );
+            const [hasAccess] = await dbPool.query(`
+                SELECT 1 FROM user_categories uc 
+                JOIN categories c ON uc.category_id = c.id 
+                WHERE uc.user_id = ? AND c.identifier = ?
+            `, [req.user.id, newsItem[0].category]);
+
             if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
             }
