@@ -8,6 +8,7 @@ import authRoutes from './server/routes/auth.js';
 import settingsRoutes from './server/routes/settings.js';
 import categoriesRoutes from './server/routes/categories.js';
 import xmlRoutes from './server/routes/xml.js';
+import usersRoutes from './server/routes/users.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,6 +25,7 @@ app.use('/api', authRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', categoriesRoutes);
 app.use('/api', xmlRoutes);
+app.use('/api', usersRoutes);
 
 const PORT = 3000;
 app.listen(PORT, () => {
