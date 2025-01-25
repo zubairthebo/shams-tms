@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 type NewsItem = {
   id: string;
@@ -10,11 +11,19 @@ type NewsItem = {
   timestamp: Date;
 };
 
-export const generateXml = async (items: NewsItem[], categories: string[]) => {
+const fetchCategories = async () => {
+  const response = await fetch('http://localhost:3000/api/categories');
+  if (!response.ok) {
+    throw new Error('Failed to fetch categories');
+  }
+  return response.json();
+};
+
+export const generateXml = async (items: NewsItem[], userCategories: string[]) => {
   try {
     // Group items by category
     const groupedItems = items.reduce((acc, item) => {
-      if (categories.includes(item.category) || categories.length === 0) {
+      if (userCategories.includes(item.category) || userCategories.length === 0) {
         if (!acc[item.category]) {
           acc[item.category] = [];
         }
@@ -24,7 +33,7 @@ export const generateXml = async (items: NewsItem[], categories: string[]) => {
     }, {} as Record<string, NewsItem[]>);
 
     // Generate XML for each category
-    const promises = Object.entries(groupedItems).map(async ([category, categoryItems]) => {
+    const promises = Object.entries(groupedItems).map(async ([categoryId, categoryItems]) => {
       const response = await fetch('http://localhost:3000/api/save-xml', {
         method: 'POST',
         headers: {
@@ -33,7 +42,7 @@ export const generateXml = async (items: NewsItem[], categories: string[]) => {
         },
         body: JSON.stringify({ 
           text: categoryItems[categoryItems.length - 1].text,
-          categoryId: category
+          categoryId
         }),
       });
       
@@ -56,6 +65,11 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
   const { toast } = useToast();
   const { language } = useLanguage();
   const { user } = useAuth();
+
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories
+  });
 
   // Filter items based on user's assigned categories
   const filteredItems = items.filter(item => 
