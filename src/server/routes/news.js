@@ -62,7 +62,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
 
         // Check if news item exists and user has permission
         const [newsItem] = await dbPool.query(
-            'SELECT category_id FROM news_items WHERE id = ?',
+            'SELECT n.*, c.identifier as category FROM news_items n JOIN categories c ON n.category_id = c.identifier WHERE n.id = ?',
             [id]
         );
 
@@ -72,8 +72,8 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
 
         if (req.user.role !== 'admin') {
             const [hasAccess] = await dbPool.query(
-                'SELECT 1 FROM user_categories WHERE user_id = ? AND category_id = ?',
-                [req.user.id, newsItem[0].category_id]
+                'SELECT 1 FROM user_categories uc JOIN categories c ON uc.category_id = c.id WHERE uc.user_id = ? AND c.identifier = ?',
+                [req.user.id, newsItem[0].category]
             );
             if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
@@ -99,7 +99,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
 
         // Check if news item exists and user has permission
         const [newsItem] = await dbPool.query(
-            'SELECT category_id FROM news_items WHERE id = ?',
+            'SELECT n.*, c.identifier as category FROM news_items n JOIN categories c ON n.category_id = c.identifier WHERE n.id = ?',
             [id]
         );
 
@@ -109,8 +109,8 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
 
         if (req.user.role !== 'admin') {
             const [hasAccess] = await dbPool.query(
-                'SELECT 1 FROM user_categories WHERE user_id = ? AND category_id = ?',
-                [req.user.id, newsItem[0].category_id]
+                'SELECT 1 FROM user_categories uc JOIN categories c ON uc.category_id = c.id WHERE uc.user_id = ? AND c.identifier = ?',
+                [req.user.id, newsItem[0].category]
             );
             if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
