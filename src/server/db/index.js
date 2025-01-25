@@ -18,11 +18,11 @@ export const initializeDatabase = async () => {
     });
 
     try {
-        // Create database if it doesn't exist
+        console.log('Creating database if not exists...');
         await connection.query(`CREATE DATABASE IF NOT EXISTS ${DB_CONFIG.database}`);
         await connection.query(`USE ${DB_CONFIG.database}`);
 
-        // Read and execute init.sql
+        console.log('Reading initialization SQL...');
         const initSql = await fs.readFile(path.join(__dirname, 'init.sql'), 'utf8');
         const initStatements = initSql.split(';').filter(stmt => stmt.trim());
         
@@ -32,7 +32,7 @@ export const initializeDatabase = async () => {
             }
         }
 
-        console.log('Database initialized successfully');
+        console.log('Database structure initialized successfully');
     } catch (error) {
         console.error('Error initializing database:', error);
         throw error;
@@ -43,7 +43,7 @@ export const initializeDatabase = async () => {
 
 export const seedDatabase = async () => {
     try {
-        // Read and execute seed.sql
+        console.log('Reading seed SQL...');
         const seedSql = await fs.readFile(path.join(__dirname, 'seed.sql'), 'utf8');
         const seedStatements = seedSql.split(';').filter(stmt => stmt.trim());
         

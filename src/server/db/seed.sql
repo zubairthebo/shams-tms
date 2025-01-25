@@ -1,3 +1,4 @@
+-- Create admin user with hashed password for 'admin123'
 INSERT INTO users (username, password, name, designation, email, role) 
 VALUES (
     'admin',
@@ -14,8 +15,9 @@ INSERT INTO categories (identifier, name_ar, name_en) VALUES
     ('weather', 'طقس', 'Weather')
 ON DUPLICATE KEY UPDATE identifier=identifier;
 
-INSERT INTO settings (company_name, website, email) 
+INSERT INTO settings (id, company_name, website_url, email) 
 VALUES (
+    1,
     'ShamsTV',
     'https://shams.tv',
     'info@shams.tv'

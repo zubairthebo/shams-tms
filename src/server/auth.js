@@ -86,7 +86,8 @@ export const handleLogin = async (req, res) => {
                 username: user.username,
                 role: user.role
             }, 
-            JWT_SECRET
+            JWT_SECRET,
+            { expiresIn: '24h' }
         );
 
         console.log('Login successful for user:', username);
