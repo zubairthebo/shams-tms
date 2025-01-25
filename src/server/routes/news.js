@@ -92,10 +92,14 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         }
 
         // Update the news item
-        await dbPool.query(
+        const [result] = await dbPool.query(
             'UPDATE news_items SET text = ? WHERE id = ?',
             [text, id]
         );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'News item not found' });
+        }
 
         // Get the updated item
         const [updatedItem] = await dbPool.query(`
@@ -121,7 +125,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     try {
-        // Check if news item exists and get its category
+        // First check if the news item exists and get its category
         const [newsItem] = await dbPool.query(`
             SELECT n.*, c.identifier as category 
             FROM news_items n 
@@ -147,7 +151,12 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
         }
 
         // Delete the news item
-        await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
+        const [result] = await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'News item not found' });
+        }
+
         res.json({ message: 'News item deleted successfully' });
     } catch (error) {
         console.error('Error deleting news:', error);
