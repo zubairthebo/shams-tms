@@ -8,6 +8,7 @@ import { authenticateToken, handleLogin } from './src/server/auth.js';
 import { UPLOADS_DIR } from './src/server/config.js';
 import dbPool from './src/server/db/index.js';
 import newsRoutes from './src/server/routes/news.js';
+import usersRoutes from './src/server/routes/users.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,6 +36,7 @@ const upload = multer({ storage: storage });
 // Routes
 app.post('/api/login', handleLogin);
 app.use('/api', newsRoutes);
+app.use('/api', usersRoutes);
 
 // Categories endpoints
 app.get('/api/categories', async (req, res) => {
