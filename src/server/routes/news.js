@@ -1,43 +1,8 @@
 import express from 'express';
 import { authenticateToken } from '../auth.js';
 import dbPool from '../db/index.js';
-import { generateTickerXML } from '../xmlGenerator.js';
 
 const router = express.Router();
-
-// Create news item
-router.post('/news', authenticateToken, async (req, res) => {
-    try {
-        const { text, category } = req.body;
-        const [userResult] = await dbPool.query('SELECT id FROM users WHERE username = ?', [req.user.username]);
-        const userId = userResult[0].id;
-
-        // Check if user has access to this category
-        if (req.user.role !== 'admin') {
-            const [categoryAccess] = await dbPool.query(
-                'SELECT 1 FROM user_categories uc JOIN categories c ON uc.category_id = c.id WHERE uc.user_id = ? AND c.identifier = ?',
-                [userId, category]
-            );
-            if (categoryAccess.length === 0) {
-                return res.status(403).json({ error: 'No access to this category' });
-            }
-        }
-
-        // Insert news item
-        const [result] = await dbPool.query(
-            'INSERT INTO news_items (id, text, category_id, created_by) VALUES (UUID(), ?, ?, ?)',
-            [text, category, userId]
-        );
-
-        // Generate XML for this category
-        await generateTickerXML(category);
-
-        res.json({ id: result.insertId, message: 'News item created successfully' });
-    } catch (error) {
-        console.error('Error creating news:', error);
-        res.status(500).json({ error: 'Failed to create news item' });
-    }
-});
 
 // Get news items
 router.get('/news', authenticateToken, async (req, res) => {
@@ -55,26 +20,62 @@ router.get('/news', authenticateToken, async (req, res) => {
     }
 });
 
+// Create news item
+router.post('/news', authenticateToken, async (req, res) => {
+    try {
+        const { text, category } = req.body;
+        
+        // Verify category exists
+        const [categoryCheck] = await dbPool.query(
+            'SELECT id FROM categories WHERE identifier = ?',
+            [category]
+        );
+        
+        if (categoryCheck.length === 0) {
+            return res.status(400).json({ error: 'Invalid category' });
+        }
+
+        // Insert news item
+        const [result] = await dbPool.query(
+            'INSERT INTO news_items (id, text, category_id, created_by) VALUES (UUID(), ?, ?, ?)',
+            [text, category, req.user.id]
+        );
+
+        res.status(201).json({ 
+            id: result.insertId,
+            text,
+            category,
+            timestamp: new Date(),
+            message: 'News item created successfully' 
+        });
+    } catch (error) {
+        console.error('Error creating news:', error);
+        res.status(500).json({ error: 'Failed to create news item' });
+    }
+});
+
 // Update news item
 router.put('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { text } = req.body;
-        const [userResult] = await dbPool.query('SELECT id FROM users WHERE username = ?', [req.user.username]);
-        const userId = userResult[0].id;
 
-        // Check if user has access to this news item
+        // Check if news item exists and user has permission
         const [newsItem] = await dbPool.query(
             'SELECT category_id FROM news_items WHERE id = ?',
             [id]
         );
 
+        if (newsItem.length === 0) {
+            return res.status(404).json({ error: 'News item not found' });
+        }
+
         if (req.user.role !== 'admin') {
-            const [categoryAccess] = await dbPool.query(
+            const [hasAccess] = await dbPool.query(
                 'SELECT 1 FROM user_categories WHERE user_id = ? AND category_id = ?',
-                [userId, newsItem[0].category_id]
+                [req.user.id, newsItem[0].category_id]
             );
-            if (categoryAccess.length === 0) {
+            if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
             }
         }
@@ -83,9 +84,6 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
             'UPDATE news_items SET text = ? WHERE id = ?',
             [text, id]
         );
-
-        // Generate XML for this category
-        await generateTickerXML(newsItem[0].category_id);
 
         res.json({ message: 'News item updated successfully' });
     } catch (error) {
@@ -98,30 +96,28 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
 router.delete('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const [userResult] = await dbPool.query('SELECT id FROM users WHERE username = ?', [req.user.username]);
-        const userId = userResult[0].id;
 
-        // Check if user has access to this news item
+        // Check if news item exists and user has permission
         const [newsItem] = await dbPool.query(
             'SELECT category_id FROM news_items WHERE id = ?',
             [id]
         );
 
+        if (newsItem.length === 0) {
+            return res.status(404).json({ error: 'News item not found' });
+        }
+
         if (req.user.role !== 'admin') {
-            const [categoryAccess] = await dbPool.query(
+            const [hasAccess] = await dbPool.query(
                 'SELECT 1 FROM user_categories WHERE user_id = ? AND category_id = ?',
-                [userId, newsItem[0].category_id]
+                [req.user.id, newsItem[0].category_id]
             );
-            if (categoryAccess.length === 0) {
+            if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
             }
         }
 
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
-
-        // Generate XML for this category
-        await generateTickerXML(newsItem[0].category_id);
-
         res.json({ message: 'News item deleted successfully' });
     } catch (error) {
         console.error('Error deleting news:', error);

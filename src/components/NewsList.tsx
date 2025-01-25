@@ -26,9 +26,13 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
   const { data: categories = {} } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:3000/api/categories');
-      const data = await response.json();
-      return data;
+      const response = await fetch('http://localhost:3000/api/categories', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      return response.json();
     }
   });
 
@@ -40,7 +44,10 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) throw new Error('Failed to fetch news');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch news');
+      }
       const data = await response.json();
       return data.map((item: any) => ({
         ...item,
@@ -57,7 +64,10 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) throw new Error('Failed to delete news');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete news');
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -65,6 +75,13 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
       toast({
         title: language === 'ar' ? "تم بنجاح" : "Success",
         description: language === 'ar' ? "تم حذف الخبر" : "News item deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: error.message,
+        variant: "destructive"
       });
     }
   });
@@ -79,7 +96,10 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
         },
         body: JSON.stringify({ text })
       });
-      if (!response.ok) throw new Error('Failed to update news');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update news');
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -88,6 +108,13 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
       toast({
         title: language === 'ar' ? "تم بنجاح" : "Success",
         description: language === 'ar' ? "تم تحديث الخبر" : "News item updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: error.message,
+        variant: "destructive"
       });
     }
   });
