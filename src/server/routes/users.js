@@ -13,7 +13,7 @@ router.get('/users', authenticateToken, async (req, res) => {
 
     try {
         const [users] = await dbPool.query(`
-            SELECT u.id, u.username, u.name, u.designation, u.email, u.role,
+            SELECT u.username, u.name, u.designation, u.email, u.role,
                    GROUP_CONCAT(c.identifier) as assignedCategories
             FROM users u
             LEFT JOIN user_categories uc ON u.id = uc.user_id
