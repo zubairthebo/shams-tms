@@ -2,7 +2,7 @@
 INSERT INTO users (username, password, name, designation, email, role) 
 VALUES (
     'admin',
-    '$2a$10$rQnM9C6Ux8kXZA.fHJWZs.BzLG0RQxH3V4yN5HXK3pxxL8ZlHyTxe',
+    '$2a$10$BObfteIb7axUmEU0EDFfhe3XRKWfdKy1tmkR/BLHcxG3Oh6ew8/yi',
     'Administrator',
     'System Administrator',
     'admin@example.com',
@@ -15,7 +15,7 @@ INSERT INTO categories (identifier, name_ar, name_en) VALUES
     ('weather', 'طقس', 'Weather')
 ON DUPLICATE KEY UPDATE identifier=identifier;
 
-INSERT INTO settings (id, company_name, website_url, email) 
+INSERT INTO settings (id, company_name, website, email) 
 VALUES (
     1,
     'ShamsTV',
