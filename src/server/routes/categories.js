@@ -95,7 +95,12 @@ router.delete('/categories/:id', authenticateToken, async (req, res) => {
 
     try {
         const { id } = req.params;
-        await dbPool.query('DELETE FROM categories WHERE identifier = ?', [id]);
+        const [result] = await dbPool.query('DELETE FROM categories WHERE identifier = ?', [id]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Category not found' });
+        }
+        
         res.json({ message: 'Category deleted successfully' });
     } catch (error) {
         console.error('Error deleting category:', error);
