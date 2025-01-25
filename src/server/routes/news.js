@@ -50,10 +50,11 @@ router.post('/news', authenticateToken, async (req, res) => {
             [newsId]
         );
 
-        res.status(201).json({ 
-            ...insertedItem[0],
-            message: 'News item created successfully' 
-        });
+        if (insertedItem.length === 0) {
+            return res.status(500).json({ error: 'Failed to create news item' });
+        }
+
+        res.status(201).json(insertedItem[0]);
     } catch (error) {
         console.error('Error creating news:', error);
         res.status(500).json({ error: 'Failed to create news item' });
@@ -66,7 +67,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { text } = req.body;
 
-        // Check if news item exists and user has permission
+        // Check if news item exists and get its category
         const [newsItem] = await dbPool.query(
             `SELECT n.*, c.identifier as category 
              FROM news_items n 
@@ -98,7 +99,15 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
             [text, id]
         );
 
-        res.json({ message: 'News item updated successfully' });
+        const [updatedItem] = await dbPool.query(
+            `SELECT n.*, c.identifier as category 
+             FROM news_items n 
+             JOIN categories c ON n.category_id = c.identifier 
+             WHERE n.id = ?`,
+            [id]
+        );
+
+        res.json(updatedItem[0]);
     } catch (error) {
         console.error('Error updating news:', error);
         res.status(500).json({ error: 'Failed to update news item' });
