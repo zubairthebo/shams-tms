@@ -21,7 +21,7 @@ const fetchCategories = async () => {
 
 export const generateXml = async (items: NewsItem[], userCategories: string[]) => {
   try {
-    // Group items by category
+    // Group items by category identifier
     const groupedItems = items.reduce((acc, item) => {
       if (userCategories.includes(item.category) || userCategories.length === 0) {
         if (!acc[item.category]) {
@@ -33,7 +33,8 @@ export const generateXml = async (items: NewsItem[], userCategories: string[]) =
     }, {} as Record<string, NewsItem[]>);
 
     // Generate XML for each category
-    const promises = Object.entries(groupedItems).map(async ([categoryId, categoryItems]) => {
+    const promises = Object.entries(groupedItems).map(async ([categoryIdentifier, categoryItems]) => {
+      console.log('Saving XML for category:', categoryIdentifier);
       const response = await fetch('http://localhost:3000/api/save-xml', {
         method: 'POST',
         headers: {
@@ -42,7 +43,7 @@ export const generateXml = async (items: NewsItem[], userCategories: string[]) =
         },
         body: JSON.stringify({ 
           text: categoryItems[categoryItems.length - 1].text,
-          categoryId
+          categoryId: categoryIdentifier // Using the category identifier directly
         }),
       });
       
@@ -87,6 +88,7 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
           : `Files saved successfully`,
       });
     } catch (error) {
+      console.error('XML generation error:', error);
       toast({
         title: language === 'ar' ? "خطأ" : "Error",
         description: language === 'ar' 
