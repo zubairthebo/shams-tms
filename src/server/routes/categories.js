@@ -77,7 +77,7 @@ router.put('/categories/:id', authenticateToken, async (req, res) => {
                 main_scene_name = ?,
                 opener_template_name = ?,
                 template_name = ?
-            WHERE identifier = ?
+            WHERE id = ?
         `, [ar, en, mainSceneName, openerTemplateName, templateName, id]);
         
         res.json({ message: 'Category updated successfully' });
@@ -95,7 +95,7 @@ router.delete('/categories/:id', authenticateToken, async (req, res) => {
 
     try {
         const { id } = req.params;
-        const [result] = await dbPool.query('DELETE FROM categories WHERE identifier = ?', [id]);
+        const [result] = await dbPool.query('DELETE FROM categories WHERE id = ?', [id]);
         
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Category not found' });
