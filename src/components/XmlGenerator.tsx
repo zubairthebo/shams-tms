@@ -19,11 +19,12 @@ const fetchCategories = async () => {
   return response.json();
 };
 
-export const generateXml = async (items: NewsItem[], userCategories: string[]) => {
+export const generateXml = async (items: NewsItem[], categories: Record<string, any>) => {
   try {
     // Group items by category identifier
     const groupedItems = items.reduce((acc, item) => {
-      if (userCategories.includes(item.category) || userCategories.length === 0) {
+      // Only process items whose categories exist in our categories list
+      if (categories[item.category]) {
         if (!acc[item.category]) {
           acc[item.category] = [];
         }
@@ -35,6 +36,7 @@ export const generateXml = async (items: NewsItem[], userCategories: string[]) =
     // Generate XML for each category
     const promises = Object.entries(groupedItems).map(async ([categoryIdentifier, categoryItems]) => {
       console.log('Saving XML for category:', categoryIdentifier);
+      
       const response = await fetch('http://localhost:3000/api/save-xml', {
         method: 'POST',
         headers: {
@@ -43,7 +45,7 @@ export const generateXml = async (items: NewsItem[], userCategories: string[]) =
         },
         body: JSON.stringify({ 
           text: categoryItems[categoryItems.length - 1].text,
-          categoryId: categoryIdentifier // Using the category identifier directly
+          categoryId: categoryIdentifier
         }),
       });
       
@@ -74,12 +76,24 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
 
   // Filter items based on user's assigned categories
   const filteredItems = items.filter(item => 
-    user?.role === 'admin' || user?.assignedCategories.includes(item.category)
+    user?.role === 'admin' || 
+    (categories && categories[item.category] && user?.assignedCategories.includes(item.category))
   );
 
   const handleGenerateXml = async () => {
+    if (!categories) {
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: language === 'ar' 
+          ? "لم يتم تحميل الفئات" 
+          : "Categories not loaded",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      await generateXml(filteredItems, user?.assignedCategories || []);
+      await generateXml(filteredItems, categories);
       
       toast({
         title: language === 'ar' ? "تم إنشاء ملفات XML" : "XML Files Created",
