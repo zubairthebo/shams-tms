@@ -12,9 +12,8 @@ router.get('/news', authenticateToken, async (req, res) => {
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                c.identifier as category
+                n.category_id as category
             FROM news_items n 
-            LEFT JOIN categories c ON n.category_id = c.identifier
             ORDER BY n.created_at DESC
         `);
         res.json(rows);
@@ -28,6 +27,16 @@ router.get('/news', authenticateToken, async (req, res) => {
 router.post('/news', authenticateToken, async (req, res) => {
     try {
         const { text, category } = req.body;
+        
+        // Verify category exists
+        const [categoryCheck] = await dbPool.query(
+            'SELECT identifier FROM categories WHERE identifier = ?',
+            [category]
+        );
+        
+        if (categoryCheck.length === 0) {
+            return res.status(400).json({ error: 'Invalid category' });
+        }
 
         // Generate UUID for the news item
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
@@ -40,13 +49,12 @@ router.post('/news', authenticateToken, async (req, res) => {
 
         const [insertedItem] = await dbPool.query(`
             SELECT 
-                n.id,
-                n.text,
-                n.created_at as timestamp,
-                c.identifier as category
-            FROM news_items n 
-            LEFT JOIN categories c ON n.category_id = c.identifier
-            WHERE n.id = ?
+                id,
+                text,
+                created_at as timestamp,
+                category_id as category
+            FROM news_items 
+            WHERE id = ?
         `, [newsId]);
 
         if (insertedItem.length === 0) {
@@ -62,29 +70,26 @@ router.post('/news', authenticateToken, async (req, res) => {
 
 // Update news item
 router.put('/news/:id', authenticateToken, async (req, res) => {
-    const { id } = req.params;
-    const { text } = req.body;
-
     try {
-        // Check if news item exists and get its category
+        const { id } = req.params;
+        const { text } = req.body;
+
+        // Check if news item exists
         const [newsItem] = await dbPool.query(`
-            SELECT n.*, c.identifier as category 
-            FROM news_items n 
-            LEFT JOIN categories c ON n.category_id = c.identifier
-            WHERE n.id = ?
+            SELECT * FROM news_items WHERE id = ?
         `, [id]);
 
         if (newsItem.length === 0) {
             return res.status(404).json({ error: 'News item not found' });
         }
 
-        // Check user permissions if not admin
+        // Check user permissions
         if (req.user.role !== 'admin') {
             const [hasAccess] = await dbPool.query(`
                 SELECT 1 FROM user_categories uc 
                 JOIN categories c ON uc.category_id = c.id 
                 WHERE uc.user_id = ? AND c.identifier = ?
-            `, [req.user.id, newsItem[0].category]);
+            `, [req.user.id, newsItem[0].category_id]);
 
             if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
@@ -92,25 +97,20 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         }
 
         // Update the news item
-        const [result] = await dbPool.query(
+        await dbPool.query(
             'UPDATE news_items SET text = ? WHERE id = ?',
             [text, id]
         );
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'News item not found' });
-        }
-
         // Get the updated item
         const [updatedItem] = await dbPool.query(`
             SELECT 
-                n.id,
-                n.text,
-                n.created_at as timestamp,
-                c.identifier as category
-            FROM news_items n 
-            LEFT JOIN categories c ON n.category_id = c.identifier
-            WHERE n.id = ?
+                id,
+                text,
+                created_at as timestamp,
+                category_id as category
+            FROM news_items 
+            WHERE id = ?
         `, [id]);
 
         res.json(updatedItem[0]);
@@ -122,28 +122,25 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
 
 // Delete news item
 router.delete('/news/:id', authenticateToken, async (req, res) => {
-    const { id } = req.params;
-
     try {
-        // First check if the news item exists and get its category
+        const { id } = req.params;
+
+        // Check if news item exists
         const [newsItem] = await dbPool.query(`
-            SELECT n.*, c.identifier as category 
-            FROM news_items n 
-            LEFT JOIN categories c ON n.category_id = c.identifier
-            WHERE n.id = ?
+            SELECT * FROM news_items WHERE id = ?
         `, [id]);
 
         if (newsItem.length === 0) {
             return res.status(404).json({ error: 'News item not found' });
         }
 
-        // Check user permissions if not admin
+        // Check user permissions
         if (req.user.role !== 'admin') {
             const [hasAccess] = await dbPool.query(`
-                SELECT 1 FROM user_categories uc
+                SELECT 1 FROM user_categories uc 
                 JOIN categories c ON uc.category_id = c.id 
                 WHERE uc.user_id = ? AND c.identifier = ?
-            `, [req.user.id, newsItem[0].category]);
+            `, [req.user.id, newsItem[0].category_id]);
 
             if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
@@ -151,12 +148,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
         }
 
         // Delete the news item
-        const [result] = await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'News item not found' });
-        }
-
+        await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
         res.json({ message: 'News item deleted successfully' });
     } catch (error) {
         console.error('Error deleting news:', error);

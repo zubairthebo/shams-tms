@@ -19,12 +19,11 @@ const fetchCategories = async () => {
   return response.json();
 };
 
-export const generateXml = async (items: NewsItem[], categories: Record<string, any>) => {
+export const generateXml = async (items: NewsItem[], userCategories: string[]) => {
   try {
-    // Group items by category identifier
+    // Group items by category
     const groupedItems = items.reduce((acc, item) => {
-      // Only process items whose categories exist in our categories list
-      if (categories[item.category]) {
+      if (userCategories.includes(item.category) || userCategories.length === 0) {
         if (!acc[item.category]) {
           acc[item.category] = [];
         }
@@ -34,9 +33,7 @@ export const generateXml = async (items: NewsItem[], categories: Record<string, 
     }, {} as Record<string, NewsItem[]>);
 
     // Generate XML for each category
-    const promises = Object.entries(groupedItems).map(async ([categoryIdentifier, categoryItems]) => {
-      console.log('Saving XML for category:', categoryIdentifier);
-      
+    const promises = Object.entries(groupedItems).map(async ([categoryId, categoryItems]) => {
       const response = await fetch('http://localhost:3000/api/save-xml', {
         method: 'POST',
         headers: {
@@ -45,7 +42,7 @@ export const generateXml = async (items: NewsItem[], categories: Record<string, 
         },
         body: JSON.stringify({ 
           text: categoryItems[categoryItems.length - 1].text,
-          categoryId: categoryIdentifier
+          categoryId
         }),
       });
       
@@ -76,24 +73,12 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
 
   // Filter items based on user's assigned categories
   const filteredItems = items.filter(item => 
-    user?.role === 'admin' || 
-    (categories && categories[item.category] && user?.assignedCategories.includes(item.category))
+    user?.role === 'admin' || user?.assignedCategories.includes(item.category)
   );
 
   const handleGenerateXml = async () => {
-    if (!categories) {
-      toast({
-        title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' 
-          ? "لم يتم تحميل الفئات" 
-          : "Categories not loaded",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      await generateXml(filteredItems, categories);
+      await generateXml(filteredItems, user?.assignedCategories || []);
       
       toast({
         title: language === 'ar' ? "تم إنشاء ملفات XML" : "XML Files Created",
@@ -102,7 +87,6 @@ export const XmlGenerator = ({ items }: { items: NewsItem[] }) => {
           : `Files saved successfully`,
       });
     } catch (error) {
-      console.error('XML generation error:', error);
       toast({
         title: language === 'ar' ? "خطأ" : "Error",
         description: language === 'ar' 

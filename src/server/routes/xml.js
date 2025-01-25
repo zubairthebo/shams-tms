@@ -10,12 +10,8 @@ const router = express.Router();
 router.post('/save-xml', authenticateToken, async (req, res) => {
     try {
         const { text, categoryId } = req.body;
-        
-        if (!text || !categoryId) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
 
-        // Get category details using identifier
+        // Verify category exists
         const [categories] = await dbPool.query(
             'SELECT * FROM categories WHERE identifier = ?',
             [categoryId]
@@ -27,16 +23,14 @@ router.post('/save-xml', authenticateToken, async (req, res) => {
 
         const category = categories[0];
 
-        // Check user permissions if not admin
+        // Check user permission for this category
         if (req.user.role !== 'admin') {
-            const [hasAccess] = await dbPool.query(`
-                SELECT 1 FROM user_categories uc
-                JOIN categories c ON uc.category_id = c.id 
-                WHERE uc.user_id = ? AND c.identifier = ?
-            `, [req.user.id, categoryId]);
-
+            const [hasAccess] = await dbPool.query(
+                'SELECT 1 FROM user_categories uc JOIN categories c ON uc.category_id = c.id WHERE uc.user_id = ? AND c.identifier = ?',
+                [req.user.id, categoryId]
+            );
             if (hasAccess.length === 0) {
-                return res.status(403).json({ error: 'Unauthorized category access' });
+                return res.status(403).json({ error: 'No access to this category' });
             }
         }
 
@@ -80,7 +74,7 @@ router.post('/save-xml', authenticateToken, async (req, res) => {
         const filename = `${categoryId}.xml`;
         const filepath = path.join(XML_DIR, filename);
         fs.writeFileSync(filepath, xmlContent);
-        
+
         res.json({ message: 'XML saved successfully', filename });
     } catch (error) {
         console.error('Error saving XML:', error);
