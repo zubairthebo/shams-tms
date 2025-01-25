@@ -74,11 +74,11 @@ router.post('/news', authenticateToken, async (req, res) => {
 
 // Update news item
 router.put('/news/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { text } = req.body;
+    const { id } = req.params;
+    const { text } = req.body;
 
-        // Check if news item exists
+    try {
+        // Check if news item exists and get its category
         const [newsItem] = await dbPool.query(`
             SELECT n.*, c.identifier as category 
             FROM news_items n 
@@ -90,7 +90,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'News item not found' });
         }
 
-        // Check user permissions
+        // Check user permissions if not admin
         if (req.user.role !== 'admin') {
             const [hasAccess] = await dbPool.query(`
                 SELECT 1 FROM user_categories uc 
@@ -130,10 +130,10 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
 
 // Delete news item
 router.delete('/news/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
+    const { id } = req.params;
 
-        // Check if news item exists
+    try {
+        // Check if news item exists and get its category
         const [newsItem] = await dbPool.query(`
             SELECT n.*, c.identifier as category 
             FROM news_items n 
@@ -145,7 +145,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'News item not found' });
         }
 
-        // Check user permissions
+        // Check user permissions if not admin
         if (req.user.role !== 'admin') {
             const [hasAccess] = await dbPool.query(`
                 SELECT 1 FROM user_categories uc 
