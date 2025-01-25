@@ -27,7 +27,7 @@ router.post('/news', authenticateToken, async (req, res) => {
         
         // Verify category exists
         const [categoryCheck] = await dbPool.query(
-            'SELECT id FROM categories WHERE identifier = ?',
+            'SELECT identifier FROM categories WHERE identifier = ?',
             [category]
         );
         
@@ -39,14 +39,17 @@ router.post('/news', authenticateToken, async (req, res) => {
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
 
-        // Insert news item with the generated UUID
+        // Insert news item with the category identifier directly
         await dbPool.query(
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
             [newsId, text, category, req.user.id]
         );
 
         const [insertedItem] = await dbPool.query(
-            'SELECT n.*, c.identifier as category FROM news_items n JOIN categories c ON n.category_id = c.identifier WHERE n.id = ?',
+            `SELECT n.*, c.identifier as category 
+             FROM news_items n 
+             JOIN categories c ON n.category_id = c.identifier 
+             WHERE n.id = ?`,
             [newsId]
         );
 
@@ -67,7 +70,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { text } = req.body;
 
-        // Check if news item exists and get its category
+        // Check if news item exists
         const [newsItem] = await dbPool.query(
             `SELECT n.*, c.identifier as category 
              FROM news_items n 
@@ -99,6 +102,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
             [text, id]
         );
 
+        // Get updated item
         const [updatedItem] = await dbPool.query(
             `SELECT n.*, c.identifier as category 
              FROM news_items n 
@@ -119,7 +123,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if news item exists and get its category
+        // Check if news item exists
         const [newsItem] = await dbPool.query(
             `SELECT n.*, c.identifier as category 
              FROM news_items n 
