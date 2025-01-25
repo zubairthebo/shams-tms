@@ -4,11 +4,12 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { authenticateToken, handleLogin } from './src/server/auth.js';
+import { authenticateToken } from './src/server/auth.js';
 import { UPLOADS_DIR } from './src/server/config.js';
 import dbPool from './src/server/db/index.js';
 import newsRoutes from './src/server/routes/news.js';
 import usersRoutes from './src/server/routes/users.js';
+import categoriesRoutes from './src/server/routes/categories.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,41 +35,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Routes
-app.post('/api/login', handleLogin);
 app.use('/api', newsRoutes);
 app.use('/api', usersRoutes);
-
-// Categories endpoints
-app.get('/api/categories', async (req, res) => {
-    try {
-        const [categories] = await dbPool.query('SELECT * FROM categories');
-        res.json(categories);
-    } catch (error) {
-        console.error('Error fetching categories:', error);
-        res.status(500).json({ error: 'Failed to fetch categories' });
-    }
-});
-
-app.put('/api/categories/:id', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    try {
-        const { id } = req.params;
-        const { ar, en } = req.body;
-        
-        await dbPool.query(
-            'UPDATE categories SET name_ar = ?, name_en = ? WHERE identifier = ?',
-            [ar, en, id]
-        );
-        
-        res.json({ message: 'Category updated successfully' });
-    } catch (error) {
-        console.error('Error updating category:', error);
-        res.status(500).json({ error: 'Failed to update category' });
-    }
-});
+app.use('/api', categoriesRoutes);
 
 // Settings endpoints
 app.get('/api/settings', async (req, res) => {

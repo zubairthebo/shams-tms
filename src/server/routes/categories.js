@@ -60,13 +60,13 @@ router.post('/categories', authenticateToken, async (req, res) => {
 });
 
 // Update category (admin only)
-router.put('/categories/:id', authenticateToken, async (req, res) => {
+router.put('/categories/:identifier', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
     }
 
     try {
-        const { id } = req.params;
+        const { identifier } = req.params;
         const { ar, en, mainSceneName, openerTemplateName, templateName } = req.body;
         
         await dbPool.query(`
@@ -77,8 +77,8 @@ router.put('/categories/:id', authenticateToken, async (req, res) => {
                 main_scene_name = ?,
                 opener_template_name = ?,
                 template_name = ?
-            WHERE id = ?
-        `, [ar, en, mainSceneName, openerTemplateName, templateName, id]);
+            WHERE identifier = ?
+        `, [ar, en, mainSceneName, openerTemplateName, templateName, identifier]);
         
         res.json({ message: 'Category updated successfully' });
     } catch (error) {
@@ -88,14 +88,14 @@ router.put('/categories/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete category (admin only)
-router.delete('/categories/:id', authenticateToken, async (req, res) => {
+router.delete('/categories/:identifier', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
     }
 
     try {
-        const { id } = req.params;
-        const [result] = await dbPool.query('DELETE FROM categories WHERE id = ?', [id]);
+        const { identifier } = req.params;
+        const [result] = await dbPool.query('DELETE FROM categories WHERE identifier = ?', [identifier]);
         
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Category not found' });
