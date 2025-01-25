@@ -12,8 +12,9 @@ router.get('/news', authenticateToken, async (req, res) => {
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                n.category_id as category
+                c.identifier as category
             FROM news_items n 
+            LEFT JOIN categories c ON n.category_id = c.id
             ORDER BY n.created_at DESC
         `);
         res.json(rows);
@@ -28,15 +29,17 @@ router.post('/news', authenticateToken, async (req, res) => {
     try {
         const { text, category } = req.body;
         
-        // Verify category exists
-        const [categoryCheck] = await dbPool.query(
-            'SELECT identifier FROM categories WHERE identifier = ?',
+        // Get category ID from identifier
+        const [categoryResult] = await dbPool.query(
+            'SELECT id FROM categories WHERE identifier = ?',
             [category]
         );
         
-        if (categoryCheck.length === 0) {
+        if (categoryResult.length === 0) {
             return res.status(400).json({ error: 'Invalid category' });
         }
+
+        const categoryId = categoryResult[0].id;
 
         // Generate UUID for the news item
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
@@ -44,17 +47,18 @@ router.post('/news', authenticateToken, async (req, res) => {
 
         await dbPool.query(
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
-            [newsId, text, category, req.user.id]
+            [newsId, text, categoryId, req.user.id]
         );
 
         const [insertedItem] = await dbPool.query(`
             SELECT 
-                id,
-                text,
-                created_at as timestamp,
-                category_id as category
-            FROM news_items 
-            WHERE id = ?
+                n.id,
+                n.text,
+                n.created_at as timestamp,
+                c.identifier as category
+            FROM news_items n 
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
         `, [newsId]);
 
         if (insertedItem.length === 0) {
@@ -76,7 +80,10 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
 
         // Check if news item exists
         const [newsItem] = await dbPool.query(`
-            SELECT * FROM news_items WHERE id = ?
+            SELECT n.*, c.identifier as category 
+            FROM news_items n 
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
         `, [id]);
 
         if (newsItem.length === 0) {
@@ -89,7 +96,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
                 SELECT 1 FROM user_categories uc 
                 JOIN categories c ON uc.category_id = c.id 
                 WHERE uc.user_id = ? AND c.identifier = ?
-            `, [req.user.id, newsItem[0].category_id]);
+            `, [req.user.id, newsItem[0].category]);
 
             if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
@@ -105,12 +112,13 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         // Get the updated item
         const [updatedItem] = await dbPool.query(`
             SELECT 
-                id,
-                text,
-                created_at as timestamp,
-                category_id as category
-            FROM news_items 
-            WHERE id = ?
+                n.id,
+                n.text,
+                n.created_at as timestamp,
+                c.identifier as category
+            FROM news_items n 
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
         `, [id]);
 
         res.json(updatedItem[0]);
@@ -127,7 +135,10 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
 
         // Check if news item exists
         const [newsItem] = await dbPool.query(`
-            SELECT * FROM news_items WHERE id = ?
+            SELECT n.*, c.identifier as category 
+            FROM news_items n 
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
         `, [id]);
 
         if (newsItem.length === 0) {
@@ -140,7 +151,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
                 SELECT 1 FROM user_categories uc 
                 JOIN categories c ON uc.category_id = c.id 
                 WHERE uc.user_id = ? AND c.identifier = ?
-            `, [req.user.id, newsItem[0].category_id]);
+            `, [req.user.id, newsItem[0].category]);
 
             if (hasAccess.length === 0) {
                 return res.status(403).json({ error: 'No access to this news item' });
