@@ -35,14 +35,19 @@ router.post('/news', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Invalid category' });
         }
 
-        // Insert news item
-        const [result] = await dbPool.query(
-            'INSERT INTO news_items (id, text, category_id, created_by) VALUES (UUID(), ?, ?, ?)',
-            [text, category, req.user.id]
+        // Generate UUID for the news item
+        const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
+        const newsId = uuidResult[0].uuid;
+
+        // Insert news item with the generated UUID
+        await dbPool.query(
+            'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
+            [newsId, text, category, req.user.id]
         );
 
         const [insertedItem] = await dbPool.query(
-            'SELECT n.*, c.identifier as category FROM news_items n JOIN categories c ON n.category_id = c.identifier WHERE n.id = LAST_INSERT_ID()'
+            'SELECT n.*, c.identifier as category FROM news_items n JOIN categories c ON n.category_id = c.identifier WHERE n.id = ?',
+            [newsId]
         );
 
         res.status(201).json({ 

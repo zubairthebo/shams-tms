@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 CREATE TABLE IF NOT EXISTS news_items (
-    id VARCHAR(36) PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY,
     text TEXT NOT NULL,
     category_id VARCHAR(255) NOT NULL,
     created_by INT NOT NULL,
