@@ -19,7 +19,7 @@ const Dashboard = () => {
     if (savedNews) {
       const parsedNews = JSON.parse(savedNews).map((item: any) => ({
         ...item,
-        timestamp: new Date(item.timestamp)
+        timestamp: new Date(item.timestamp).toISOString()
       }));
       setNewsItems(parsedNews);
     }
@@ -29,7 +29,7 @@ const Dashboard = () => {
     const newItem: NewsItem = {
       id: crypto.randomUUID(),
       ...data,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
     const updatedNews = [...newsItems, newItem];
     setNewsItems(updatedNews);
@@ -99,7 +99,11 @@ const Dashboard = () => {
             <NewsForm onSubmit={handleNewsSubmit} />
           </div>
           <div>
-            <NewsList items={newsItems} onDelete={handleDeleteNews} onEdit={handleEditNews} />
+            <NewsList 
+              items={newsItems} 
+              onDelete={handleDeleteNews} 
+              onEdit={handleEditNews}
+            />
           </div>
         </div>
       </div>

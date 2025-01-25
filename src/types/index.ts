@@ -4,7 +4,7 @@ export type NewsItem = {
   id: string;
   text: string;
   category: string;
-  timestamp: Date;
+  timestamp: string;
 };
 
 export const categories = {

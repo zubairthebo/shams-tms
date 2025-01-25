@@ -7,13 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
-
-type NewsItem = {
-  id: string;
-  text: string;
-  category: string;
-  timestamp: string;
-};
+import type { NewsItem } from "@/types";
 
 interface NewsListProps {
   items?: NewsItem[];
@@ -33,7 +27,8 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
     queryKey: ['categories'],
     queryFn: async () => {
       const response = await fetch('http://localhost:3000/api/categories');
-      return response.json();
+      const data = await response.json();
+      return data;
     }
   });
 
@@ -46,7 +41,11 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
         }
       });
       if (!response.ok) throw new Error('Failed to fetch news');
-      return response.json();
+      const data = await response.json();
+      return data.map((item: any) => ({
+        ...item,
+        timestamp: new Date(item.timestamp).toISOString()
+      }));
     }
   });
 
@@ -145,7 +144,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={handleSaveEdit}
+                        onClick={() => handleSaveEdit()}
                         className="text-green-500 hover:text-green-700"
                       >
                         <Check className="h-4 w-4" />
@@ -153,7 +152,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={handleCancelEdit}
+                        onClick={() => handleCancelEdit()}
                         className="text-red-500 hover:text-red-700"
                       >
                         <X className="h-4 w-4" />
