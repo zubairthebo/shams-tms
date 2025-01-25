@@ -32,7 +32,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
     }
   });
 
-  const { data: newsItems = [] } = useQuery({
+  const { data: newsItems = [] } = useQuery<NewsItem[]>({
     queryKey: ['news'],
     queryFn: async () => {
       const response = await fetch('http://localhost:3000/api/news', {
@@ -44,7 +44,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
       const data = await response.json();
       return data.map((item: any) => ({
         ...item,
-        timestamp: new Date(item.timestamp).toISOString()
+        timestamp: new Date(item.timestamp)
       }));
     }
   });

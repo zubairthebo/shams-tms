@@ -19,7 +19,7 @@ const Dashboard = () => {
     if (savedNews) {
       const parsedNews = JSON.parse(savedNews).map((item: any) => ({
         ...item,
-        timestamp: new Date(item.timestamp).toISOString()
+        timestamp: new Date(item.timestamp)
       }));
       setNewsItems(parsedNews);
     }
@@ -29,7 +29,7 @@ const Dashboard = () => {
     const newItem: NewsItem = {
       id: crypto.randomUUID(),
       ...data,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
     };
     const updatedNews = [...newsItems, newItem];
     setNewsItems(updatedNews);
