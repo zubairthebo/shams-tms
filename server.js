@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { authenticateToken, handleLogin } from './src/server/auth.js';
-import { XML_DIR, UPLOADS_DIR } from './src/server/config.js';
+import { UPLOADS_DIR } from './src/server/config.js';
 import dbPool from './src/server/db/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
