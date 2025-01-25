@@ -11,6 +11,7 @@ import newsRoutes from './src/server/routes/news.js';
 import usersRoutes from './src/server/routes/users.js';
 import categoriesRoutes from './src/server/routes/categories.js';
 import authRoutes from './src/server/routes/auth.js';
+import xmlRoutes from './src/server/routes/xml.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -40,6 +41,7 @@ app.use('/api', authRoutes);
 app.use('/api', newsRoutes);
 app.use('/api', usersRoutes);
 app.use('/api', categoriesRoutes);
+app.use('/api', xmlRoutes);
 
 // Settings endpoints
 app.get('/api/settings', async (req, res) => {

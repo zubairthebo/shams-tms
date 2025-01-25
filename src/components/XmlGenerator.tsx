@@ -24,7 +24,7 @@ export const generateXml = async (items: NewsItem[], categories: string[]) => {
     }, {} as Record<string, NewsItem[]>);
 
     // Generate XML for each category
-    for (const [category, categoryItems] of Object.entries(groupedItems)) {
+    const promises = Object.entries(groupedItems).map(async ([category, categoryItems]) => {
       const response = await fetch('http://localhost:3000/api/save-xml', {
         method: 'POST',
         headers: {
@@ -33,14 +33,19 @@ export const generateXml = async (items: NewsItem[], categories: string[]) => {
         },
         body: JSON.stringify({ 
           text: categoryItems[categoryItems.length - 1].text,
-          category
+          categoryId: category
         }),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to save XML');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save XML');
       }
-    }
+      
+      return response.json();
+    });
+
+    await Promise.all(promises);
   } catch (error) {
     console.error('Error saving XML:', error);
     throw error;
