@@ -1,4 +1,3 @@
--- Insert default admin user (password: admin123)
 INSERT INTO users (username, password, name, designation, email, role) 
 VALUES (
     'admin',
@@ -9,17 +8,15 @@ VALUES (
     'admin'
 ) ON DUPLICATE KEY UPDATE id=id;
 
--- Insert some default categories
 INSERT INTO categories (identifier, name_ar, name_en) VALUES
     ('news', 'أخبار', 'News'),
     ('sports', 'رياضة', 'Sports'),
     ('weather', 'طقس', 'Weather')
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE identifier=identifier;
 
--- Assign all categories to admin user
-INSERT INTO user_categories (user_id, category_id)
-SELECT 
-    (SELECT id FROM users WHERE username = 'admin'),
-    id
-FROM categories
-ON DUPLICATE KEY UPDATE user_id=user_id;
+INSERT INTO settings (company_name, website, email) 
+VALUES (
+    'ShamsTV',
+    'https://shams.tv',
+    'info@shams.tv'
+) ON DUPLICATE KEY UPDATE id=id;

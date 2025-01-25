@@ -6,7 +6,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
-export const XML_DIR = path.join(__dirname, '..', '..', 'xml');
 export const UPLOADS_DIR = path.join(__dirname, '..', '..', 'public', 'uploads');
 
 // Database configuration
@@ -16,10 +15,3 @@ export const DB_CONFIG = {
     password: '',
     database: 'news_ticker'
 };
-
-// Ensure directories exist
-[XML_DIR, UPLOADS_DIR].forEach(dir => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-});
