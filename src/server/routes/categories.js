@@ -4,7 +4,6 @@ import dbPool from '../db/index.js';
 
 const router = express.Router();
 
-// Get all categories
 router.get('/categories', async (req, res) => {
     try {
         const [categories] = await dbPool.query(`
@@ -18,7 +17,6 @@ router.get('/categories', async (req, res) => {
             FROM categories
         `);
         
-        // Transform array to object with identifier as key
         const formattedCategories = categories.reduce((acc, category) => {
             const { identifier, ...rest } = category;
             acc[identifier] = rest;
@@ -32,7 +30,6 @@ router.get('/categories', async (req, res) => {
     }
 });
 
-// Create new category (admin only)
 router.post('/categories', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -41,6 +38,16 @@ router.post('/categories', authenticateToken, async (req, res) => {
     try {
         const { identifier, ar, en, mainSceneName, openerTemplateName, templateName } = req.body;
         
+        // Check if identifier already exists
+        const [existing] = await dbPool.query(
+            'SELECT identifier FROM categories WHERE identifier = ?',
+            [identifier]
+        );
+
+        if (existing.length > 0) {
+            return res.status(400).json({ error: 'Category identifier already exists' });
+        }
+
         await dbPool.query(`
             INSERT INTO categories (
                 identifier, 

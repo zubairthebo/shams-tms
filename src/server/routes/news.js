@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../auth.js';
 import dbPool from '../db/index.js';
+import { generateCategoryXML } from '../utils/xmlGenerator.js';
 
 const router = express.Router();
 
@@ -28,17 +29,6 @@ router.post('/news', authenticateToken, async (req, res) => {
     try {
         const { text, category } = req.body;
         
-        // Verify category exists
-        const [categoryCheck] = await dbPool.query(
-            'SELECT identifier FROM categories WHERE identifier = ?',
-            [category]
-        );
-        
-        if (categoryCheck.length === 0) {
-            return res.status(400).json({ error: 'Invalid category' });
-        }
-
-        // Generate UUID for the news item
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
 
@@ -46,6 +36,9 @@ router.post('/news', authenticateToken, async (req, res) => {
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
             [newsId, text, category, req.user.id]
         );
+
+        // Generate new XML for this category
+        await generateCategoryXML(category);
 
         const [insertedItem] = await dbPool.query(`
             SELECT 
@@ -56,10 +49,6 @@ router.post('/news', authenticateToken, async (req, res) => {
             FROM news_items 
             WHERE id = ?
         `, [newsId]);
-
-        if (insertedItem.length === 0) {
-            return res.status(500).json({ error: 'Failed to create news item' });
-        }
 
         res.status(201).json(insertedItem[0]);
     } catch (error) {
@@ -74,35 +63,23 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { text } = req.body;
 
-        // Check if news item exists
-        const [newsItem] = await dbPool.query(`
-            SELECT * FROM news_items WHERE id = ?
-        `, [id]);
+        const [newsItem] = await dbPool.query(
+            'SELECT * FROM news_items WHERE id = ?',
+            [id]
+        );
 
         if (newsItem.length === 0) {
             return res.status(404).json({ error: 'News item not found' });
         }
 
-        // Check user permissions
-        if (req.user.role !== 'admin') {
-            const [hasAccess] = await dbPool.query(`
-                SELECT 1 FROM user_categories uc 
-                JOIN categories c ON uc.category_id = c.id 
-                WHERE uc.user_id = ? AND c.identifier = ?
-            `, [req.user.id, newsItem[0].category_id]);
-
-            if (hasAccess.length === 0) {
-                return res.status(403).json({ error: 'No access to this news item' });
-            }
-        }
-
-        // Update the news item
         await dbPool.query(
             'UPDATE news_items SET text = ? WHERE id = ?',
             [text, id]
         );
 
-        // Get the updated item
+        // Generate new XML for this category
+        await generateCategoryXML(newsItem[0].category_id);
+
         const [updatedItem] = await dbPool.query(`
             SELECT 
                 id,
@@ -125,30 +102,22 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if news item exists
-        const [newsItem] = await dbPool.query(`
-            SELECT * FROM news_items WHERE id = ?
-        `, [id]);
+        const [newsItem] = await dbPool.query(
+            'SELECT * FROM news_items WHERE id = ?',
+            [id]
+        );
 
         if (newsItem.length === 0) {
             return res.status(404).json({ error: 'News item not found' });
         }
 
-        // Check user permissions
-        if (req.user.role !== 'admin') {
-            const [hasAccess] = await dbPool.query(`
-                SELECT 1 FROM user_categories uc 
-                JOIN categories c ON uc.category_id = c.id 
-                WHERE uc.user_id = ? AND c.identifier = ?
-            `, [req.user.id, newsItem[0].category_id]);
+        const categoryId = newsItem[0].category_id;
 
-            if (hasAccess.length === 0) {
-                return res.status(403).json({ error: 'No access to this news item' });
-            }
-        }
-
-        // Delete the news item
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
+
+        // Generate new XML for this category
+        await generateCategoryXML(categoryId);
+
         res.json({ message: 'News item deleted successfully' });
     } catch (error) {
         console.error('Error deleting news:', error);
