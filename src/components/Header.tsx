@@ -1,15 +1,13 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Sun, Moon, Languages, LogOut, Key } from "lucide-react";
 import { useTheme } from "next-themes";
 
 export const Header = () => {
   const { user, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
-  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
 
   const { data: settings } = useQuery({
@@ -21,13 +19,8 @@ export const Header = () => {
     }
   });
 
-  const handlePasswordReset = () => {
-    navigate('/reset-password');
-  };
-
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
-    // Force theme update
     document.documentElement.classList.toggle('dark');
   };
 
@@ -46,34 +39,24 @@ export const Header = () => {
         </Link>
         <div className="flex items-center space-x-3">
           {user && (
-            <>
-              <Button variant="ghost" size="icon" onClick={handlePasswordReset} className="p-2">
-                <Key className="h-6 w-6" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={logout} className="p-2">
-                <LogOut className="h-6 w-6" />
-              </Button>
-            </>
+            <Button variant="ghost" onClick={logout}>
+              {language === 'ar' ? 'تسجيل خروج' : 'Logout'}
+            </Button>
           )}
           <Button
             variant="ghost"
-            size="icon"
             onClick={toggleTheme}
-            className="p-2"
           >
-            {theme === 'dark' ? (
-              <Sun className="h-6 w-6" />
-            ) : (
-              <Moon className="h-6 w-6" />
-            )}
+            {theme === 'dark' 
+              ? (language === 'ar' ? 'وضع النهار' : 'Light Mode')
+              : (language === 'ar' ? 'وضع الليل' : 'Dark Mode')
+            }
           </Button>
           <Button
             variant="ghost"
-            size="icon"
             onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-            className="p-2"
           >
-            <Languages className="h-6 w-6" />
+            {language === 'ar' ? 'English' : 'العربية'}
           </Button>
         </div>
       </div>

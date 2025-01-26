@@ -24,7 +24,7 @@ export const SiteSettings = () => {
   const { data: currentSettings } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:3000/api/settings');
+      const response = await fetch('/api/settings');
       if (!response.ok) throw new Error('Failed to fetch settings');
       return response.json();
     }
@@ -32,7 +32,15 @@ export const SiteSettings = () => {
 
   useEffect(() => {
     if (currentSettings) {
-      setSettings(currentSettings);
+      setSettings({
+        companyName: currentSettings.companyName || "",
+        website: currentSettings.website || "",
+        email: currentSettings.email || "",
+        facebook: currentSettings.facebook || "",
+        twitter: currentSettings.twitter || "",
+        instagram: currentSettings.instagram || "",
+        linkedin: currentSettings.linkedin || ""
+      });
     }
   }, [currentSettings]);
 
@@ -42,7 +50,7 @@ export const SiteSettings = () => {
       if (logo) formData.append('logo', logo);
       formData.append('settings', JSON.stringify(settings));
 
-      const response = await fetch('http://localhost:3000/api/settings', {
+      const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
