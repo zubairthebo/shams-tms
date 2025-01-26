@@ -7,6 +7,7 @@ import dbPool from '../db/index.js';
 
 const router = express.Router();
 
+// Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, UPLOADS_DIR)
@@ -21,7 +22,7 @@ const upload = multer({ storage: storage });
 
 router.get('/settings', async (req, res) => {
     try {
-        const [settings] = await dbPool.query('SELECT * FROM settings WHERE id = 1');
+        const [settings] = await dbPool.query('SELECT company_name as companyName, logo_path as logo, website, email, facebook_url as facebook, twitter_url as twitter, instagram_url as instagram, linkedin_url as linkedin FROM settings WHERE id = 1');
         res.json(settings[0] || {
             companyName: 'ShamsTV',
             logo: '',
