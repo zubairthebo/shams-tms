@@ -13,7 +13,7 @@ export const Header = () => {
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
-      const response = await fetch('/api/settings');
+      const response = await fetch('http://localhost:3000/api/settings');
       if (!response.ok) throw new Error('Failed to fetch settings');
       return response.json();
     }
