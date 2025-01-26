@@ -41,7 +41,7 @@ const Dashboard = () => {
     const itemToDelete = newsItems.find(item => item.id === id);
     if (!itemToDelete) return;
 
-    if (user?.role !== 'admin' && !user?.assignedCategories.includes(itemToDelete.category)) {
+    if (user?.role !== 'admin' && !user?.assignedCategories?.includes(itemToDelete.category)) {
       return;
     }
 

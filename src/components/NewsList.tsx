@@ -9,7 +9,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import type { NewsItem } from "@/types";
 
-export const NewsList = () => {
+interface NewsListProps {
+  items?: NewsItem[];
+  onDelete?: (id: string) => void;
+  onEdit?: (id: string, newText: string) => void;
+}
+
+export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -94,6 +100,9 @@ export const NewsList = () => {
   const handleSaveEdit = () => {
     if (editingId) {
       updateMutation.mutate({ id: editingId, text: editText });
+      if (onEdit) {
+        onEdit(editingId, editText);
+      }
     }
   };
 
@@ -167,7 +176,12 @@ export const NewsList = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteMutation.mutate(item.id)}
+                            onClick={() => {
+                              deleteMutation.mutate(item.id);
+                              if (onDelete) {
+                                onDelete(item.id);
+                              }
+                            }}
                             className="text-red-500 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />

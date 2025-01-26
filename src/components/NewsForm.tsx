@@ -8,7 +8,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 
-export const NewsForm = () => {
+interface NewsFormProps {
+  onSubmit?: (data: { text: string; category: string }) => void;
+}
+
+export const NewsForm = ({ onSubmit }: NewsFormProps) => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,6 +57,9 @@ export const NewsForm = () => {
     e.preventDefault();
     if (!text || !category) return;
     createNewsMutation.mutate({ text, category });
+    if (onSubmit) {
+      onSubmit({ text, category });
+    }
   };
 
   const availableCategories = user?.role === 'admin' 
