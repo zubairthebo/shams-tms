@@ -32,13 +32,15 @@ export const NewsForm = ({ onSubmit }: NewsFormProps) => {
       return response.json();
     },
     retry: 3,
-    onError: (error) => {
-      console.error('Error fetching categories:', error);
-      toast({
-        title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' ? "فشل في جلب الفئات" : "Failed to fetch categories",
-        variant: "destructive",
-      });
+    meta: {
+      errorHandler: (error: Error) => {
+        console.error('Error fetching categories:', error);
+        toast({
+          title: language === 'ar' ? "خطأ" : "Error",
+          description: language === 'ar' ? "فشل في جلب الفئات" : "Failed to fetch categories",
+          variant: "destructive",
+        });
+      }
     }
   });
 
