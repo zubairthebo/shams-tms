@@ -5,6 +5,12 @@ import dbPool from '../db/index.js';
 
 export const generateCategoryXML = async (categoryId: string) => {
     try {
+        // Get all news items for this category
+        const [items] = await dbPool.query(
+            'SELECT * FROM news_items WHERE category_id = ? ORDER BY created_at DESC',
+            [categoryId]
+        );
+
         // Get category settings
         const [categories] = await dbPool.query(
             'SELECT * FROM categories WHERE identifier = ?',
@@ -16,24 +22,22 @@ export const generateCategoryXML = async (categoryId: string) => {
         }
 
         const category = categories[0];
+        const mainSceneName = category.main_scene_name || 'MAIN_TICKER';
+        const openerTemplateName = category.opener_template_name || `TICKER_${category.identifier.toUpperCase()}_START`;
+        const templateName = category.template_name || `TICKER_${category.identifier.toUpperCase()}`;
 
-        // Get all news items for this category
-        const [items] = await dbPool.query(
-            'SELECT * FROM news_items WHERE category_id = ? ORDER BY created_at DESC',
-            [categoryId]
-        );
-
+        // Generate XML content with all news items
         const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <tickerfeed version="2.4">
-    <playlist type="flipping_carousel" name="${category.main_scene_name}" target="carousel">
+    <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
         <defaults>
-            <template>${category.opener_template_name}</template>
+            <template>${openerTemplateName}</template>
         </defaults>
         <element />
     </playlist>
-    <playlist type="flipping_carousel" name="${category.main_scene_name}" target="carousel">
+    <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
         <defaults>
-            <template>${category.template_name}</template>
+            <template>${templateName}</template>
             <attributes>
                 <attribute name="custom_attribute">custom value</attribute>
             </attributes>
@@ -50,6 +54,7 @@ export const generateCategoryXML = async (categoryId: string) => {
             fs.mkdirSync(XML_DIR, { recursive: true });
         }
 
+        // Save XML file
         const filename = `${categoryId}.xml`;
         const filepath = path.join(XML_DIR, filename);
         fs.writeFileSync(filepath, xmlContent);
@@ -62,6 +67,7 @@ export const generateCategoryXML = async (categoryId: string) => {
 };
 
 const escapeXml = (text: string) => {
+    if (!text) return '';
     return text.replace(/[<>&'"]/g, char => {
         switch (char) {
             case '<': return '&lt;';
