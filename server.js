@@ -17,10 +17,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-app.use(cors());
+
+// Configure CORS to accept requests from any origin during development
+app.use(cors({
+  origin: '*', // In production, replace with specific origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
-// Serve static files from public directory
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Configure multer for file uploads
@@ -89,7 +95,7 @@ app.put('/api/settings', authenticateToken, upload.fields([
     }
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

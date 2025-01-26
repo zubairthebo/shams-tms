@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 interface NewsFormProps {
   onSubmit?: (data: { text: string; category: string }) => void;
 }
@@ -20,18 +22,29 @@ export const NewsForm = ({ onSubmit }: NewsFormProps) => {
   const [text, setText] = useState("");
   const [category, setCategory] = useState("");
 
-  const { data: categories = {} } = useQuery({
+  const { data: categories = {}, isError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:3000/api/categories');
-      if (!response.ok) throw new Error('Failed to fetch categories');
+      const response = await fetch(`${API_URL}/api/categories`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
       return response.json();
+    },
+    retry: 3,
+    onError: (error) => {
+      console.error('Error fetching categories:', error);
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: language === 'ar' ? "فشل في جلب الفئات" : "Failed to fetch categories",
+        variant: "destructive",
+      });
     }
   });
 
   const createNewsMutation = useMutation({
     mutationFn: async (data: { text: string; category: string }) => {
-      const response = await fetch('http://localhost:3000/api/news', {
+      const response = await fetch(`${API_URL}/api/news`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,6 +78,18 @@ export const NewsForm = ({ onSubmit }: NewsFormProps) => {
   const availableCategories = user?.role === 'admin' 
     ? Object.keys(categories)
     : user?.assignedCategories || [];
+
+  if (isError) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-red-500">
+            {language === 'ar' ? "فشل في تحميل الفئات" : "Failed to load categories"}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
