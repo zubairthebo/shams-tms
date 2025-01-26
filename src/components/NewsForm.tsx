@@ -8,11 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 
-interface NewsFormProps {
-  onSubmit?: (data: { text: string; category: string }) => void;
-}
-
-export const NewsForm = ({ onSubmit }: NewsFormProps) => {
+export const NewsForm = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -24,6 +20,7 @@ export const NewsForm = ({ onSubmit }: NewsFormProps) => {
     queryKey: ['categories'],
     queryFn: async () => {
       const response = await fetch('http://localhost:3000/api/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
       return response.json();
     }
   });
@@ -55,13 +52,7 @@ export const NewsForm = ({ onSubmit }: NewsFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text || !category) return;
-
-    const data = { text, category };
-    if (onSubmit) {
-      onSubmit(data);
-    } else {
-      createNewsMutation.mutate(data);
-    }
+    createNewsMutation.mutate({ text, category });
   };
 
   const availableCategories = user?.role === 'admin' 

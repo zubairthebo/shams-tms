@@ -9,13 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import type { NewsItem } from "@/types";
 
-interface NewsListProps {
-  items?: NewsItem[];
-  onDelete?: (id: string) => void;
-  onEdit?: (id: string, newText: string) => void;
-}
-
-export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
+export const NewsList = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -26,11 +20,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
   const { data: categories = {} } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:3000/api/categories', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await fetch('http://localhost:3000/api/categories');
       if (!response.ok) throw new Error('Failed to fetch categories');
       return response.json();
     }
@@ -44,10 +34,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch news');
-      }
+      if (!response.ok) throw new Error('Failed to fetch news');
       const data = await response.json();
       return data.map((item: any) => ({
         ...item,
@@ -64,10 +51,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete news');
-      }
+      if (!response.ok) throw new Error('Failed to delete news');
       return response.json();
     },
     onSuccess: () => {
@@ -75,13 +59,6 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
       toast({
         title: language === 'ar' ? "تم بنجاح" : "Success",
         description: language === 'ar' ? "تم حذف الخبر" : "News item deleted successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: language === 'ar' ? "خطأ" : "Error",
-        description: error.message,
-        variant: "destructive"
       });
     }
   });
@@ -96,10 +73,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
         },
         body: JSON.stringify({ text })
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update news');
-      }
+      if (!response.ok) throw new Error('Failed to update news');
       return response.json();
     },
     onSuccess: () => {
@@ -108,13 +82,6 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
       toast({
         title: language === 'ar' ? "تم بنجاح" : "Success",
         description: language === 'ar' ? "تم تحديث الخبر" : "News item updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: language === 'ar' ? "خطأ" : "Error",
-        description: error.message,
-        variant: "destructive"
       });
     }
   });
@@ -139,8 +106,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
     return user?.role === 'admin' || user?.assignedCategories?.includes(category);
   };
 
-  const displayItems = items.length > 0 ? items : newsItems;
-  const groupedItems = displayItems.reduce((acc: Record<string, NewsItem[]>, item) => {
+  const groupedItems = newsItems.reduce((acc: Record<string, NewsItem[]>, item) => {
     if (!acc[item.category]) {
       acc[item.category] = [];
     }
@@ -171,7 +137,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleSaveEdit()}
+                        onClick={handleSaveEdit}
                         className="text-green-500 hover:text-green-700"
                       >
                         <Check className="h-4 w-4" />
@@ -179,7 +145,7 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleCancelEdit()}
+                        onClick={handleCancelEdit}
                         className="text-red-500 hover:text-red-700"
                       >
                         <X className="h-4 w-4" />
@@ -188,28 +154,26 @@ export const NewsList = ({ items = [], onDelete, onEdit }: NewsListProps) => {
                   ) : (
                     <>
                       <span>{item.text}</span>
-                      <div className="flex items-center space-x-2">
-                        {canManageCategory(item.category) && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleStartEdit(item)}
-                              className="text-blue-500 hover:text-blue-700"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => deleteMutation.mutate(item.id)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      {canManageCategory(item.category) && (
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleStartEdit(item)}
+                            className="text-blue-500 hover:text-blue-700"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteMutation.mutate(item.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
                 </li>
