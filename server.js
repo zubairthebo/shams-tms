@@ -12,21 +12,20 @@ import usersRoutes from './src/server/routes/users.js';
 import categoriesRoutes from './src/server/routes/categories.js';
 import authRoutes from './src/server/routes/auth.js';
 import xmlRoutes from './src/server/routes/xml.js';
+import settingsRoutes from './src/server/routes/settings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 
-// Configure CORS to accept requests from any origin during development
 app.use(cors({
-  origin: '*', // In production, replace with specific origin
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
-
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Configure multer for file uploads
@@ -48,52 +47,7 @@ app.use('/api', newsRoutes);
 app.use('/api', usersRoutes);
 app.use('/api', categoriesRoutes);
 app.use('/api', xmlRoutes);
-
-// Settings endpoints
-app.get('/api/settings', async (req, res) => {
-    try {
-        const [settings] = await dbPool.query('SELECT * FROM settings WHERE id = 1');
-        res.json(settings[0] || {
-            companyName: 'ShamsTV',
-            logo: '',
-            website: 'https://shams.tv',
-            email: 'info@shams.tv'
-        });
-    } catch (error) {
-        console.error('Error fetching settings:', error);
-        res.status(500).json({ error: 'Failed to fetch settings' });
-    }
-});
-
-app.put('/api/settings', authenticateToken, upload.fields([
-    { name: 'logo', maxCount: 1 }
-]), async (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    try {
-        const settings = JSON.parse(req.body.settings);
-        if (req.files?.logo) {
-            settings.logo = `/uploads/${req.files.logo[0].filename}`;
-        }
-
-        await dbPool.query(`
-            INSERT INTO settings (id, company_name, logo_path, website, email)
-            VALUES (1, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-            company_name = VALUES(company_name),
-            logo_path = VALUES(logo_path),
-            website = VALUES(website),
-            email = VALUES(email)
-        `, [settings.companyName, settings.logo, settings.website, settings.email]);
-
-        res.json({ message: 'Settings updated successfully' });
-    } catch (error) {
-        console.error('Error updating settings:', error);
-        res.status(500).json({ error: 'Failed to update settings' });
-    }
-});
+app.use('/api', settingsRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

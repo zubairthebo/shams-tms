@@ -2,8 +2,8 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import { authenticateToken } from '../auth.js';
-import dbPool from '../db/index.js';
 import { UPLOADS_DIR } from '../config.js';
+import dbPool from '../db/index.js';
 
 const router = express.Router();
 
@@ -58,10 +58,10 @@ router.put('/settings', authenticateToken, upload.fields([
                 logo_path, 
                 website, 
                 email,
-                facebook,
-                twitter,
-                instagram,
-                linkedin
+                facebook_url,
+                twitter_url,
+                instagram_url,
+                linkedin_url
             )
             VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
@@ -69,10 +69,10 @@ router.put('/settings', authenticateToken, upload.fields([
             logo_path = VALUES(logo_path),
             website = VALUES(website),
             email = VALUES(email),
-            facebook = VALUES(facebook),
-            twitter = VALUES(twitter),
-            instagram = VALUES(instagram),
-            linkedin = VALUES(linkedin)
+            facebook_url = VALUES(facebook_url),
+            twitter_url = VALUES(twitter_url),
+            instagram_url = VALUES(instagram_url),
+            linkedin_url = VALUES(linkedin_url)
         `, [
             settings.companyName,
             settings.logo,
