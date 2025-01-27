@@ -14,7 +14,11 @@ export const SiteSettings = () => {
     facebook: "",
     twitter: "",
     instagram: "",
-    linkedin: ""
+    linkedin: "",
+    youtube: "",
+    tiktok: "",
+    snapchat: "",
+    threads: ""
   });
   const [logo, setLogo] = useState<File | null>(null);
   const { toast } = useToast();
@@ -39,7 +43,11 @@ export const SiteSettings = () => {
         facebook: currentSettings.facebook || "",
         twitter: currentSettings.twitter || "",
         instagram: currentSettings.instagram || "",
-        linkedin: currentSettings.linkedin || ""
+        linkedin: currentSettings.linkedin || "",
+        youtube: currentSettings.youtube || "",
+        tiktok: currentSettings.tiktok || "",
+        snapchat: currentSettings.snapchat || "",
+        threads: currentSettings.threads || ""
       });
     }
   }, [currentSettings]);
@@ -148,6 +156,34 @@ export const SiteSettings = () => {
           <Input
             value={settings.linkedin}
             onChange={(e) => setSettings({ ...settings, linkedin: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="block text-sm font-medium mb-1">YouTube URL</Label>
+          <Input
+            value={settings.youtube}
+            onChange={(e) => setSettings({ ...settings, youtube: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="block text-sm font-medium mb-1">TikTok URL</Label>
+          <Input
+            value={settings.tiktok}
+            onChange={(e) => setSettings({ ...settings, tiktok: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="block text-sm font-medium mb-1">Snapchat URL</Label>
+          <Input
+            value={settings.snapchat}
+            onChange={(e) => setSettings({ ...settings, snapchat: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="block text-sm font-medium mb-1">Threads URL</Label>
+          <Input
+            value={settings.threads}
+            onChange={(e) => setSettings({ ...settings, threads: e.target.value })}
           />
         </div>
         <Button onClick={handleSave}>

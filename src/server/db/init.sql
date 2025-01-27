@@ -38,6 +38,10 @@ CREATE TABLE IF NOT EXISTS settings (
     twitter_url VARCHAR(255),
     instagram_url VARCHAR(255),
     linkedin_url VARCHAR(255),
+    youtube_url VARCHAR(255),
+    tiktok_url VARCHAR(255),
+    snapchat_url VARCHAR(255),
+    threads_url VARCHAR(255),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 

@@ -12,7 +12,6 @@ const pool = mysql.createPool({
 
 const generateTickerXML = async (items, categoryId) => {
     try {
-        // Get category settings from database
         const [categories] = await pool.execute(
             'SELECT * FROM categories WHERE id = ?',
             [categoryId]
@@ -41,6 +40,7 @@ const generateTickerXML = async (items, categoryId) => {
             });
         };
 
+        // Generate XML content specific to this category
         return `<?xml version="1.0" encoding="UTF-8"?>
 <tickerfeed version="2.4">
     <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
@@ -106,9 +106,9 @@ export const saveXML = async (req, res) => {
             fs.mkdirSync(XML_DIR, { recursive: true });
         }
 
-        // Get all items for this category
+        // Get only items for this specific category
         const [items] = await pool.execute(
-            'SELECT * FROM news_items WHERE category_id = ? ORDER BY timestamp',
+            'SELECT * FROM news_items WHERE category_id = ? ORDER BY timestamp DESC',
             [categoryId]
         );
 

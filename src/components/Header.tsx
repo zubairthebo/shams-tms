@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-import { Clock, LogOut } from "lucide-react";
+import { Clock, LogOut, Sun, Moon, Languages } from "lucide-react";
 import { format } from "date-fns";
 
 export const Header = () => {
@@ -35,6 +35,7 @@ export const Header = () => {
     // Clear all application storage
     localStorage.clear();
     sessionStorage.clear();
+    // Additional cleanup if needed
     logout();
   };
 
@@ -52,38 +53,36 @@ export const Header = () => {
           ) : (
             <span className="text-xl font-bold">{settings?.companyName || 'ShamsTV'}</span>
           )}
-          <span className="text-lg font-medium hidden md:block">
-            {settings?.companyName}
-          </span>
         </Link>
 
-        <div className="flex-1 flex justify-center">
-          <div className="text-xl font-digital">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="text-2xl font-digital">
             {format(currentTime, 'HH:mm:ss')}
+          </div>
+          <div className="text-sm mt-1">
+            {format(currentTime, 'dddd, MMMM d, yyyy')}
           </div>
         </div>
 
         <div className="flex items-center space-x-3">
           {user && (
-            <Button variant="ghost" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              {language === 'ar' ? 'تسجيل خروج' : 'Logout'}
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <LogOut className="h-5 w-5" />
             </Button>
           )}
           <Button
             variant="ghost"
+            size="icon"
             onClick={toggleTheme}
           >
-            {theme === 'dark' 
-              ? (language === 'ar' ? 'وضع النهار' : 'Light Mode')
-              : (language === 'ar' ? 'وضع الليل' : 'Dark Mode')
-            }
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
           <Button
             variant="ghost"
+            size="icon"
             onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
           >
-            {language === 'ar' ? 'English' : 'العربية'}
+            <Languages className="h-5 w-5" />
           </Button>
         </div>
       </div>
