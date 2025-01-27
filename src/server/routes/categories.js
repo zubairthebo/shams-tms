@@ -30,24 +30,15 @@ router.get('/categories', async (req, res) => {
     }
 });
 
-router.post('/categories', authenticateToken, async (req, res) => {
+router.post('/categories/:identifier', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
     }
 
     try {
-        const { identifier, ar, en, mainSceneName, openerTemplateName, templateName } = req.body;
+        const { identifier } = req.params;
+        const { ar, en, mainSceneName, openerTemplateName, templateName } = req.body;
         
-        // Check if identifier already exists
-        const [existing] = await dbPool.query(
-            'SELECT identifier FROM categories WHERE identifier = ?',
-            [identifier]
-        );
-
-        if (existing.length > 0) {
-            return res.status(400).json({ error: 'Category identifier already exists' });
-        }
-
         await dbPool.query(`
             INSERT INTO categories (
                 identifier, 
@@ -58,6 +49,10 @@ router.post('/categories', authenticateToken, async (req, res) => {
                 template_name
             ) VALUES (?, ?, ?, ?, ?, ?)
         `, [identifier, ar, en, mainSceneName, openerTemplateName, templateName]);
+
+        // Create empty XML file for new category
+        const { generateCategoryXML } = await import('../utils/xmlGenerator.js');
+        await generateCategoryXML(identifier);
         
         res.status(201).json({ message: 'Category created successfully' });
     } catch (error) {
@@ -66,7 +61,6 @@ router.post('/categories', authenticateToken, async (req, res) => {
     }
 });
 
-// Update category (admin only)
 router.put('/categories/:identifier', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
