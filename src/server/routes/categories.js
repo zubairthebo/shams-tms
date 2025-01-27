@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../auth.js';
 import dbPool from '../db/index.js';
+import { generateCategoryXML } from '../utils/xmlGenerator.js';
 
 const router = express.Router();
 
@@ -39,7 +40,7 @@ router.post('/categories/:identifier', authenticateToken, async (req, res) => {
         const { identifier } = req.params;
         const { ar, en, mainSceneName, openerTemplateName, templateName } = req.body;
         
-        await dbPool.query(`
+        const [result] = await dbPool.query(`
             INSERT INTO categories (
                 identifier, 
                 name_ar, 
@@ -48,13 +49,12 @@ router.post('/categories/:identifier', authenticateToken, async (req, res) => {
                 opener_template_name, 
                 template_name
             ) VALUES (?, ?, ?, ?, ?, ?)
-        `, [identifier, ar, en, mainSceneName, openerTemplateName, templateName]);
+        `, [identifier, ar, en, mainSceneName || 'MAIN_TICKER', openerTemplateName || 'TICKER_START', templateName || 'TICKER']);
 
         // Create empty XML file for new category
-        const { generateCategoryXML } = await import('../utils/xmlGenerator.js');
         await generateCategoryXML(identifier);
         
-        res.status(201).json({ message: 'Category created successfully' });
+        res.status(201).json({ message: 'Category created successfully', id: result.insertId });
     } catch (error) {
         console.error('Error creating category:', error);
         res.status(500).json({ error: 'Failed to create category' });

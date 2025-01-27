@@ -4,14 +4,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useTheme } from "next-themes";
-import { Clock, LogOut, Sun, Moon, Languages } from "lucide-react";
+import { Clock, LogOut, Languages } from "lucide-react";
 import { format } from "date-fns";
 
 export const Header = () => {
   const { user, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
-  const { theme, setTheme } = useTheme();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const { data: settings } = useQuery({
@@ -39,11 +37,6 @@ export const Header = () => {
     logout();
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-    document.documentElement.classList.toggle('dark');
-  };
-
   return (
     <header className="bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -60,7 +53,7 @@ export const Header = () => {
             {format(currentTime, 'HH:mm:ss')}
           </div>
           <div className="text-sm mt-1">
-            {format(currentTime, 'dddd, MMMM d, yyyy')}
+            {format(currentTime, 'EEEE, MMMM d, yyyy')}
           </div>
         </div>
 
@@ -70,13 +63,6 @@ export const Header = () => {
               <LogOut className="h-5 w-5" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-          >
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
           <Button
             variant="ghost"
             size="icon"

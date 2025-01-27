@@ -22,7 +22,23 @@ const upload = multer({ storage: storage });
 
 router.get('/settings', async (req, res) => {
     try {
-        const [settings] = await dbPool.query('SELECT company_name as companyName, logo_path as logo, website, email, facebook_url as facebook, twitter_url as twitter, instagram_url as instagram, linkedin_url as linkedin FROM settings WHERE id = 1');
+        const [settings] = await dbPool.query(`
+            SELECT 
+                company_name as companyName, 
+                logo_path as logo, 
+                website, 
+                email, 
+                facebook_url as facebook, 
+                twitter_url as twitter, 
+                instagram_url as instagram, 
+                linkedin_url as linkedin,
+                youtube_url as youtube,
+                tiktok_url as tiktok,
+                snapchat_url as snapchat,
+                threads_url as threads
+            FROM settings 
+            WHERE id = 1
+        `);
         res.json(settings[0] || {
             companyName: 'ShamsTV',
             logo: '',
@@ -31,7 +47,11 @@ router.get('/settings', async (req, res) => {
             facebook: '',
             twitter: '',
             instagram: '',
-            linkedin: ''
+            linkedin: '',
+            youtube: '',
+            tiktok: '',
+            snapchat: '',
+            threads: ''
         });
     } catch (error) {
         console.error('Error fetching settings:', error);
@@ -62,9 +82,13 @@ router.put('/settings', authenticateToken, upload.fields([
                 facebook_url,
                 twitter_url,
                 instagram_url,
-                linkedin_url
+                linkedin_url,
+                youtube_url,
+                tiktok_url,
+                snapchat_url,
+                threads_url
             )
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
             company_name = VALUES(company_name),
             logo_path = VALUES(logo_path),
@@ -73,7 +97,11 @@ router.put('/settings', authenticateToken, upload.fields([
             facebook_url = VALUES(facebook_url),
             twitter_url = VALUES(twitter_url),
             instagram_url = VALUES(instagram_url),
-            linkedin_url = VALUES(linkedin_url)
+            linkedin_url = VALUES(linkedin_url),
+            youtube_url = VALUES(youtube_url),
+            tiktok_url = VALUES(tiktok_url),
+            snapchat_url = VALUES(snapchat_url),
+            threads_url = VALUES(threads_url)
         `, [
             settings.companyName,
             settings.logo,
@@ -82,7 +110,11 @@ router.put('/settings', authenticateToken, upload.fields([
             settings.facebook,
             settings.twitter,
             settings.instagram,
-            settings.linkedin
+            settings.linkedin,
+            settings.youtube,
+            settings.tiktok,
+            settings.snapchat,
+            settings.threads
         ]);
 
         res.json({ message: 'Settings updated successfully' });
