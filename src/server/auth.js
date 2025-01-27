@@ -16,20 +16,20 @@ export const authenticateToken = async (req, res, next) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         
         // Get fresh user data from database
-        const [users] = await dbPool.query(
+        const [users] = await dbPool.execute(
             'SELECT id, username, role FROM users WHERE id = ?',
             [decoded.id]
         );
 
         if (users.length === 0) {
             console.log('User not found for token:', decoded.id);
-            return res.status(403).json({ error: 'User not found or session expired' });
+            return res.status(403).json({ error: 'User not found' });
         }
 
         const user = users[0];
 
-        // Get assigned categories
-        const [categories] = await dbPool.query(`
+        // Get assigned categories using JOIN with categories table
+        const [categories] = await dbPool.execute(`
             SELECT c.identifier 
             FROM categories c 
             INNER JOIN user_categories uc ON c.id = uc.category_id 
@@ -47,7 +47,7 @@ export const authenticateToken = async (req, res, next) => {
     } catch (err) {
         console.error('Token verification error:', err);
         if (err.name === 'TokenExpiredError') {
-            return res.status(401).json({ error: 'Token expired' });
+            return res.status(403).json({ error: 'Token expired' });
         }
         return res.status(403).json({ error: 'Invalid token' });
     }
@@ -59,7 +59,7 @@ export const handleLogin = async (req, res) => {
 
     try {
         // Get user from database
-        const [users] = await dbPool.query(
+        const [users] = await dbPool.execute(
             'SELECT * FROM users WHERE username = ?',
             [username]
         );
@@ -79,14 +79,14 @@ export const handleLogin = async (req, res) => {
         }
 
         // Get assigned categories
-        const [categories] = await dbPool.query(`
+        const [categories] = await dbPool.execute(`
             SELECT c.identifier 
             FROM categories c 
             INNER JOIN user_categories uc ON c.id = uc.category_id 
             WHERE uc.user_id = ?
         `, [user.id]);
 
-        // Generate token
+        // Generate token with 24h expiration
         const token = jwt.sign(
             { 
                 id: user.id,
