@@ -3,14 +3,25 @@ import path from 'path';
 import { XML_DIR } from '../config.js';
 import dbPool from '../db/index.js';
 
-/**
- * Generates and saves XML content for a specific category
- */
+const escapeXml = (text) => {
+    if (!text) return '';
+    return text.replace(/[<>&'"]/g, char => {
+        switch (char) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case "'": return '&apos;';
+            case '"': return '&quot;';
+            default: return char;
+        }
+    });
+};
+
 export const generateCategoryXML = async (categoryId) => {
     try {
-        // Get category details
-        const [categories] = await dbPool.execute(
-            'SELECT * FROM categories WHERE id = ?',
+        // Get category settings
+        const [categories] = await dbPool.query(
+            'SELECT * FROM categories WHERE identifier = ?',
             [categoryId]
         );
 
@@ -20,13 +31,12 @@ export const generateCategoryXML = async (categoryId) => {
 
         const category = categories[0];
 
-        // Get all news items for this category only
-        const [items] = await dbPool.execute(
+        // Get only news items for this specific category
+        const [items] = await dbPool.query(
             'SELECT * FROM news_items WHERE category_id = ? ORDER BY created_at DESC',
             [categoryId]
         );
 
-        // Define template names based on category
         const mainSceneName = category.main_scene_name || 'MAIN_TICKER';
         const openerTemplateName = category.opener_template_name || `TICKER_${category.identifier.toUpperCase()}_START`;
         const templateName = category.template_name || `TICKER_${category.identifier.toUpperCase()}`;
@@ -59,33 +69,15 @@ export const generateCategoryXML = async (categoryId) => {
             fs.mkdirSync(XML_DIR, { recursive: true });
         }
 
-        // Save XML file using category identifier
-        const filename = `${category.identifier}.xml`;
+        const filename = `${categoryId}.xml`;
         const filepath = path.join(XML_DIR, filename);
         fs.writeFileSync(filepath, xmlContent);
 
-        return { success: true, filename };
+        return filename;
     } catch (error) {
         console.error('Error generating XML:', error);
         throw error;
     }
-};
-
-/**
- * Escapes special characters for XML content
- */
-const escapeXml = (text) => {
-    if (!text || typeof text !== 'string') return '';
-    return text.replace(/[<>&'"]/g, char => {
-        switch (char) {
-            case '<': return '&lt;';
-            case '>': return '&gt;';
-            case '&': return '&amp;';
-            case "'": return '&apos;';
-            case '"': return '&quot;';
-            default: return char;
-        }
-    });
 };
 
 export default { generateCategoryXML };
