@@ -8,14 +8,13 @@ const router = express.Router();
 // Get news items
 router.get('/news', authenticateToken, async (req, res) => {
     try {
-        const [rows] = await dbPool.execute(`
+        const [rows] = await dbPool.query(`
             SELECT 
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                c.identifier as category
+                n.category_id as category
             FROM news_items n 
-            JOIN categories c ON n.category_id = c.id
             ORDER BY n.created_at DESC
         `);
         res.json(rows);
@@ -27,154 +26,102 @@ router.get('/news', authenticateToken, async (req, res) => {
 
 // Create news item
 router.post('/news', authenticateToken, async (req, res) => {
-    const connection = await dbPool.getConnection();
     try {
-        await connection.beginTransaction();
-
         const { text, category } = req.body;
         
-        // First get the category ID using the identifier
-        const [categories] = await connection.execute(
-            'SELECT id FROM categories WHERE identifier = ?',
-            [category]
-        );
-
-        if (categories.length === 0) {
-            await connection.rollback();
-            return res.status(400).json({ error: 'Invalid category' });
-        }
-
-        const categoryId = categories[0].id;
-
-        // Generate UUID v4
-        const [uuidResult] = await connection.execute('SELECT UUID() as uuid');
+        const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
 
-        // Insert the news item using category_id
-        await connection.execute(
+        await dbPool.query(
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
-            [newsId, text, categoryId, req.user.id]
+            [newsId, text, category, req.user.id]
         );
-
-        await connection.commit();
 
         // Generate new XML for this category
         await generateCategoryXML(category);
 
-        const [insertedItem] = await connection.execute(`
+        const [insertedItem] = await dbPool.query(`
             SELECT 
-                n.id,
-                n.text,
-                n.created_at as timestamp,
-                c.identifier as category
-            FROM news_items n
-            JOIN categories c ON n.category_id = c.id
-            WHERE n.id = ?
+                id,
+                text,
+                created_at as timestamp,
+                category_id as category
+            FROM news_items 
+            WHERE id = ?
         `, [newsId]);
 
         res.status(201).json(insertedItem[0]);
     } catch (error) {
-        await connection.rollback();
         console.error('Error creating news:', error);
         res.status(500).json({ error: 'Failed to create news item' });
-    } finally {
-        connection.release();
     }
 });
 
 // Update news item
 router.put('/news/:id', authenticateToken, async (req, res) => {
-    const connection = await dbPool.getConnection();
     try {
-        await connection.beginTransaction();
-
         const { id } = req.params;
         const { text } = req.body;
 
-        // Check if news item exists and get its category
-        const [newsItems] = await connection.execute(`
-            SELECT n.*, c.identifier as category_identifier 
-            FROM news_items n
-            JOIN categories c ON n.category_id = c.id
-            WHERE n.id = ?
-        `, [id]);
+        const [newsItem] = await dbPool.query(
+            'SELECT * FROM news_items WHERE id = ?',
+            [id]
+        );
 
-        if (newsItems.length === 0) {
-            await connection.rollback();
+        if (newsItem.length === 0) {
             return res.status(404).json({ error: 'News item not found' });
         }
 
-        // Update the news item
-        await connection.execute(
+        await dbPool.query(
             'UPDATE news_items SET text = ? WHERE id = ?',
             [text, id]
         );
 
-        await connection.commit();
-
         // Generate new XML for this category
-        await generateCategoryXML(newsItems[0].category_identifier);
+        await generateCategoryXML(newsItem[0].category_id);
 
-        const [updatedItem] = await connection.execute(`
+        const [updatedItem] = await dbPool.query(`
             SELECT 
-                n.id,
-                n.text,
-                n.created_at as timestamp,
-                c.identifier as category
-            FROM news_items n
-            JOIN categories c ON n.category_id = c.id
-            WHERE n.id = ?
+                id,
+                text,
+                created_at as timestamp,
+                category_id as category
+            FROM news_items 
+            WHERE id = ?
         `, [id]);
 
         res.json(updatedItem[0]);
     } catch (error) {
-        await connection.rollback();
         console.error('Error updating news:', error);
         res.status(500).json({ error: 'Failed to update news item' });
-    } finally {
-        connection.release();
     }
 });
 
 // Delete news item
 router.delete('/news/:id', authenticateToken, async (req, res) => {
-    const connection = await dbPool.getConnection();
     try {
-        await connection.beginTransaction();
-
         const { id } = req.params;
 
-        // Check if news item exists and get its category
-        const [newsItems] = await connection.execute(`
-            SELECT n.*, c.identifier as category_identifier
-            FROM news_items n
-            JOIN categories c ON n.category_id = c.id
-            WHERE n.id = ?
-        `, [id]);
-
-        if (newsItems.length === 0) {
-            await connection.rollback();
-            return res.status(404).json({ error: 'News item not found' });
-        }
-
-        // Delete the news item
-        await connection.execute(
-            'DELETE FROM news_items WHERE id = ?', 
+        const [newsItem] = await dbPool.query(
+            'SELECT * FROM news_items WHERE id = ?',
             [id]
         );
 
-        await connection.commit();
+        if (newsItem.length === 0) {
+            return res.status(404).json({ error: 'News item not found' });
+        }
+
+        const categoryId = newsItem[0].category_id;
+
+        await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
 
         // Generate new XML for this category
-        await generateCategoryXML(newsItems[0].category_identifier);
+        await generateCategoryXML(categoryId);
 
         res.json({ message: 'News item deleted successfully' });
     } catch (error) {
-        await connection.rollback();
         console.error('Error deleting news:', error);
         res.status(500).json({ error: 'Failed to delete news item' });
-    } finally {
-        connection.release();
     }
 });
 
