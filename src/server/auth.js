@@ -7,7 +7,10 @@ export const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) return res.status(401).json({ error: 'Access denied' });
+    if (!token) {
+        console.log('No token provided');
+        return res.status(401).json({ error: 'Access denied - No token provided' });
+    }
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -19,7 +22,8 @@ export const authenticateToken = async (req, res, next) => {
         );
 
         if (users.length === 0) {
-            return res.status(403).json({ error: 'User not found' });
+            console.log('User not found for token:', decoded.id);
+            return res.status(403).json({ error: 'User not found or session expired' });
         }
 
         const user = users[0];
@@ -42,6 +46,9 @@ export const authenticateToken = async (req, res, next) => {
         next();
     } catch (err) {
         console.error('Token verification error:', err);
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token expired' });
+        }
         return res.status(403).json({ error: 'Invalid token' });
     }
 };

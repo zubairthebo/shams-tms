@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useToast } from "@/components/ui/use-toast";
 
 interface User {
     username: string;
@@ -19,12 +20,47 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+
+    const clearAuthData = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+    };
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         const userData = localStorage.getItem('user');
+        
         if (token && userData) {
-            setUser(JSON.parse(userData));
+            try {
+                // Verify token is still valid
+                fetch('http://localhost:3000/api/news', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }).then(response => {
+                    if (!response.ok) {
+                        if (response.status === 403 || response.status === 401) {
+                            console.log('Session expired or invalid, clearing auth data');
+                            clearAuthData();
+                            toast({
+                                title: "Session Expired",
+                                description: "Please log in again",
+                                variant: "destructive",
+                            });
+                        }
+                    } else {
+                        setUser(JSON.parse(userData));
+                    }
+                }).catch(error => {
+                    console.error('Auth verification error:', error);
+                    clearAuthData();
+                });
+            } catch (error) {
+                console.error('Error parsing stored user data:', error);
+                clearAuthData();
+            }
         }
         setIsLoading(false);
     }, []);
@@ -47,9 +83,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
+        clearAuthData();
+        toast({
+            title: "Logged Out",
+            description: "You have been successfully logged out",
+        });
     };
 
     return (
