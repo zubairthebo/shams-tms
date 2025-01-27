@@ -13,8 +13,9 @@ router.get('/news', authenticateToken, async (req, res) => {
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                n.category_id as category
+                c.identifier as category
             FROM news_items n 
+            JOIN categories c ON n.category_id = c.id
             ORDER BY n.created_at DESC
         `);
         res.json(rows);
@@ -32,7 +33,7 @@ router.post('/news', authenticateToken, async (req, res) => {
 
         const { text, category } = req.body;
         
-        // First verify the category exists
+        // First get the category ID using the identifier
         const [categories] = await connection.execute(
             'SELECT id FROM categories WHERE identifier = ?',
             [category]
@@ -49,7 +50,7 @@ router.post('/news', authenticateToken, async (req, res) => {
         const [uuidResult] = await connection.execute('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
 
-        // Insert the news item
+        // Insert the news item using category_id
         await connection.execute(
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
             [newsId, text, categoryId, req.user.id]
@@ -62,12 +63,13 @@ router.post('/news', authenticateToken, async (req, res) => {
 
         const [insertedItem] = await connection.execute(`
             SELECT 
-                id,
-                text,
-                created_at as timestamp,
-                category_id as category
-            FROM news_items 
-            WHERE id = ?
+                n.id,
+                n.text,
+                n.created_at as timestamp,
+                c.identifier as category
+            FROM news_items n
+            JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
         `, [newsId]);
 
         res.status(201).json(insertedItem[0]);
@@ -90,23 +92,17 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         const { text } = req.body;
 
         // Check if news item exists and get its category
-        const [newsItems] = await connection.execute(
-            'SELECT * FROM news_items WHERE id = ?',
-            [id]
-        );
+        const [newsItems] = await connection.execute(`
+            SELECT n.*, c.identifier as category_identifier 
+            FROM news_items n
+            JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
+        `, [id]);
 
         if (newsItems.length === 0) {
             await connection.rollback();
             return res.status(404).json({ error: 'News item not found' });
         }
-
-        const newsItem = newsItems[0];
-
-        // Get category identifier
-        const [categories] = await connection.execute(
-            'SELECT identifier FROM categories WHERE id = ?',
-            [newsItem.category_id]
-        );
 
         // Update the news item
         await connection.execute(
@@ -117,18 +113,17 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         await connection.commit();
 
         // Generate new XML for this category
-        if (categories.length > 0) {
-            await generateCategoryXML(categories[0].identifier);
-        }
+        await generateCategoryXML(newsItems[0].category_identifier);
 
         const [updatedItem] = await connection.execute(`
             SELECT 
-                id,
-                text,
-                created_at as timestamp,
-                category_id as category
-            FROM news_items 
-            WHERE id = ?
+                n.id,
+                n.text,
+                n.created_at as timestamp,
+                c.identifier as category
+            FROM news_items n
+            JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
         `, [id]);
 
         res.json(updatedItem[0]);
@@ -150,23 +145,17 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
 
         // Check if news item exists and get its category
-        const [newsItems] = await connection.execute(
-            'SELECT * FROM news_items WHERE id = ?',
-            [id]
-        );
+        const [newsItems] = await connection.execute(`
+            SELECT n.*, c.identifier as category_identifier
+            FROM news_items n
+            JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
+        `, [id]);
 
         if (newsItems.length === 0) {
             await connection.rollback();
             return res.status(404).json({ error: 'News item not found' });
         }
-
-        const newsItem = newsItems[0];
-
-        // Get category identifier
-        const [categories] = await connection.execute(
-            'SELECT identifier FROM categories WHERE id = ?',
-            [newsItem.category_id]
-        );
 
         // Delete the news item
         await connection.execute(
@@ -177,9 +166,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
         await connection.commit();
 
         // Generate new XML for this category
-        if (categories.length > 0) {
-            await generateCategoryXML(categories[0].identifier);
-        }
+        await generateCategoryXML(newsItems[0].category_identifier);
 
         res.json({ message: 'News item deleted successfully' });
     } catch (error) {
