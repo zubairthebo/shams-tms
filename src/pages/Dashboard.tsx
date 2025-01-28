@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { NewsForm } from "@/components/NewsForm";
 import { NewsList } from "@/components/NewsList";
-import { generateXml } from "@/components/XmlGenerator";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +33,6 @@ const Dashboard = () => {
     const updatedNews = [...newsItems, newItem];
     setNewsItems(updatedNews);
     localStorage.setItem('newsItems', JSON.stringify(updatedNews));
-    generateXml(updatedNews, user?.assignedCategories || []);
   };
 
   const handleDeleteNews = (id: string) => {
