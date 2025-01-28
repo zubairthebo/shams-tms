@@ -24,12 +24,12 @@ const generateTickerXML = async (items, categoryId) => {
         const category = categories[0];
         const mainSceneName = category.main_scene_name || 'MAIN_TICKER';
 
-        // If no items, return minimal XML structure
+        // Return minimal XML structure when no items
         if (!items || items.length === 0) {
             return `<?xml version="1.0" encoding="UTF-8"?>
 <tickerfeed version="2.4">
-    <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
-    </playlist>
+<playlist type="flipping_carousel" name="mainSceneName" target="carousel">
+</playlist>
 </tickerfeed>`;
         }
 
@@ -103,11 +103,6 @@ export const saveXML = async (req, res) => {
         const category = categories[0];
         const filename = `${category.identifier}.xml`;
         const filepath = path.join(XML_DIR, filename);
-
-        // Ensure XML directory exists
-        if (!fs.existsSync(XML_DIR)) {
-            fs.mkdirSync(XML_DIR, { recursive: true });
-        }
 
         // Get items for this specific category
         const [items] = await pool.execute(

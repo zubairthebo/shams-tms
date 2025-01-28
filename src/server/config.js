@@ -8,6 +8,7 @@ const __dirname = dirname(__filename);
 
 export const JWT_SECRET = 'your-secret-key'; // In production, use environment variable
 export const UPLOADS_DIR = path.join(__dirname, '..', '..', 'public', 'uploads');
+export const XML_DIR = path.join(__dirname, '..', '..', 'public', 'xml');
 
 // Database configuration
 export const DB_CONFIG = {
@@ -17,7 +18,9 @@ export const DB_CONFIG = {
     database: 'news_ticker'
 };
 
-// Ensure uploads directory exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
+// Ensure directories exist
+[UPLOADS_DIR, XML_DIR].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+});
