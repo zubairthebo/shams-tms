@@ -1,6 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
-import { Facebook, Twitter, Instagram, Linkedin, Youtube, TiktokIcon } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, Youtube } from "lucide-react";
 
 export const Footer = () => {
   const { language } = useLanguage();
@@ -24,8 +24,7 @@ export const Footer = () => {
     { icon: Twitter, url: settings.twitter },
     { icon: Instagram, url: settings.instagram },
     { icon: Linkedin, url: settings.linkedin },
-    { icon: Youtube, url: settings.youtube },
-    { icon: TiktokIcon, url: settings.tiktok }
+    { icon: Youtube, url: settings.youtube }
   ].filter(link => link.url);
 
   return (
