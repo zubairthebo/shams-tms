@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
+import { generateXml } from "./XmlGenerator";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -57,8 +58,10 @@ export const NewsForm = ({ onSubmit }: NewsFormProps) => {
       if (!response.ok) throw new Error('Failed to create news');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['news'] });
+      // Generate XML only for the affected category
+      await generateXml(variables.category);
       setText("");
       setCategory("");
       toast({
