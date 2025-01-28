@@ -55,10 +55,8 @@ export const XmlGenerator = ({ items, categoryId }: { items: NewsItem[], categor
   const handleGenerateXml = async () => {
     try {
       if (categoryId) {
-        // Generate XML for specific category
         await generateXml(categoryId);
       } else {
-        // Generate XML for all user's categories
         const userCategories = user?.assignedCategories || [];
         const categoriesToProcess = user?.role === 'admin' 
           ? Object.keys(categories || {})

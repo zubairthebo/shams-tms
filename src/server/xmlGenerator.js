@@ -23,8 +23,16 @@ const generateTickerXML = async (items, categoryId) => {
 
         const category = categories[0];
         const mainSceneName = category.main_scene_name || 'MAIN_TICKER';
-        const openerTemplateName = category.opener_template_name || `TICKER_${category.identifier.toUpperCase()}_START`;
         const templateName = category.template_name || `TICKER_${category.identifier.toUpperCase()}`;
+
+        // If no items, return minimal XML structure
+        if (!items || items.length === 0) {
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<tickerfeed version="2.4">
+    <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
+    </playlist>
+</tickerfeed>`;
+        }
 
         const safeText = (text) => {
             if (!text || typeof text !== 'string') return '';
@@ -40,15 +48,9 @@ const generateTickerXML = async (items, categoryId) => {
             });
         };
 
-        // Generate XML content specific to this category
+        // Generate XML content with items
         return `<?xml version="1.0" encoding="UTF-8"?>
 <tickerfeed version="2.4">
-    <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
-        <defaults>
-            <template>${openerTemplateName}</template>
-        </defaults>
-        <element />
-    </playlist>
     <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
         <defaults>
             <template>${templateName}</template>
@@ -70,10 +72,10 @@ const generateTickerXML = async (items, categoryId) => {
 
 export const saveXML = async (req, res) => {
     try {
-        const { text, categoryId } = req.body;
+        const { categoryId } = req.body;
         
-        if (!text || !categoryId) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!categoryId) {
+            return res.status(400).json({ error: 'Missing category ID' });
         }
 
         // Check user permissions
@@ -106,7 +108,7 @@ export const saveXML = async (req, res) => {
             fs.mkdirSync(XML_DIR, { recursive: true });
         }
 
-        // Get only items for this specific category
+        // Get items for this specific category
         const [items] = await pool.execute(
             'SELECT * FROM news_items WHERE category_id = ? ORDER BY timestamp DESC',
             [categoryId]
@@ -118,7 +120,7 @@ export const saveXML = async (req, res) => {
         res.json({ message: 'XML saved successfully', filename });
     } catch (error) {
         console.error('Error saving XML:', error);
-        res.status(500).json({ error: 'Failed to save XML' });
+        res.status(500).json({ error: 'Failed to save XML', details: error.message });
     }
 };
 
