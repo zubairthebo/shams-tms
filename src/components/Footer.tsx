@@ -1,6 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
-import { Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, Youtube, TiktokIcon } from "lucide-react";
 
 export const Footer = () => {
   const { language } = useLanguage();
@@ -18,6 +18,15 @@ export const Footer = () => {
   if (!settings) {
     return null;
   }
+
+  const socialLinks = [
+    { icon: Facebook, url: settings.facebook },
+    { icon: Twitter, url: settings.twitter },
+    { icon: Instagram, url: settings.instagram },
+    { icon: Linkedin, url: settings.linkedin },
+    { icon: Youtube, url: settings.youtube },
+    { icon: TiktokIcon, url: settings.tiktok }
+  ].filter(link => link.url);
 
   return (
     <footer className="bg-primary text-primary-foreground py-6 mt-auto">
@@ -49,46 +58,17 @@ export const Footer = () => {
             </a>
           </div>
           <div className="flex justify-center space-x-4 mt-4">
-            {settings.facebook && (
-              <a 
-                href={settings.facebook} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+            {socialLinks.map((link, index) => (
+              <a
+                key={index}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hover:text-secondary transition-colors"
               >
-                <Facebook className="w-5 h-5" />
+                <link.icon className="w-5 h-5" />
               </a>
-            )}
-            {settings.twitter && (
-              <a 
-                href={settings.twitter} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="hover:text-secondary transition-colors"
-              >
-                <Twitter className="w-5 h-5" />
-              </a>
-            )}
-            {settings.instagram && (
-              <a 
-                href={settings.instagram} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="hover:text-secondary transition-colors"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-            )}
-            {settings.linkedin && (
-              <a 
-                href={settings.linkedin} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="hover:text-secondary transition-colors"
-              >
-                <Linkedin className="w-5 h-5" />
-              </a>
-            )}
+            ))}
           </div>
         </div>
       </div>

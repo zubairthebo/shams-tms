@@ -30,10 +30,8 @@ export const Header = () => {
   }, []);
 
   const handleLogout = () => {
-    // Clear all application storage
     localStorage.clear();
     sessionStorage.clear();
-    // Additional cleanup if needed
     logout();
   };
 
@@ -42,7 +40,10 @@ export const Header = () => {
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-4 hover:opacity-80 transition-opacity">
           {settings?.logo ? (
-            <img src={settings.logo} alt={settings?.companyName || 'Logo'} className="h-10" />
+            <div className="flex items-center gap-3">
+              <img src={settings.logo} alt={settings?.companyName || 'Logo'} className="h-10" />
+              <span className="text-xl font-bold">{settings?.companyName}</span>
+            </div>
           ) : (
             <span className="text-xl font-bold">{settings?.companyName || 'ShamsTV'}</span>
           )}

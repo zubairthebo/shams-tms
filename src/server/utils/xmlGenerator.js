@@ -19,7 +19,6 @@ const escapeXml = (text) => {
 
 export const generateCategoryXML = async (categoryId) => {
     try {
-        // Get category settings
         const [categories] = await dbPool.query(
             'SELECT * FROM categories WHERE identifier = ?',
             [categoryId]
@@ -31,25 +30,44 @@ export const generateCategoryXML = async (categoryId) => {
 
         const category = categories[0];
 
-        // Get only news items for this specific category
         const [items] = await dbPool.query(
             'SELECT * FROM news_items WHERE category_id = ? ORDER BY created_at DESC',
             [categoryId]
         );
 
+        // If no items, create empty XML file
+        if (items.length === 0) {
+            const emptyXml = '<?xml version="1.0" encoding="UTF-8"?>\n<tickerfeed version="2.4"></tickerfeed>';
+            const filename = `${categoryId}.xml`;
+            const filepath = path.join(XML_DIR, filename);
+            
+            if (!fs.existsSync(XML_DIR)) {
+                fs.mkdirSync(XML_DIR, { recursive: true });
+            }
+            
+            fs.writeFileSync(filepath, emptyXml);
+            return filename;
+        }
+
         const mainSceneName = category.main_scene_name || 'MAIN_TICKER';
-        const openerTemplateName = category.opener_template_name || `TICKER_${category.identifier.toUpperCase()}_START`;
         const templateName = category.template_name || `TICKER_${category.identifier.toUpperCase()}`;
 
         // Generate XML content
-        const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<tickerfeed version="2.4">
+        let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<tickerfeed version="2.4">`;
+
+        // Only add opener playlist if opener_template_name exists
+        if (category.opener_template_name) {
+            xmlContent += `
     <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
         <defaults>
-            <template>${openerTemplateName}</template>
+            <template>${category.opener_template_name}</template>
         </defaults>
         <element />
-    </playlist>
+    </playlist>`;
+        }
+
+        xmlContent += `
     <playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
         <defaults>
             <template>${templateName}</template>
@@ -64,7 +82,6 @@ export const generateCategoryXML = async (categoryId) => {
     </playlist>
 </tickerfeed>`;
 
-        // Ensure XML directory exists
         if (!fs.existsSync(XML_DIR)) {
             fs.mkdirSync(XML_DIR, { recursive: true });
         }
