@@ -23,7 +23,6 @@ const generateTickerXML = async (items, categoryId) => {
 
         const category = categories[0];
         const mainSceneName = category.main_scene_name || 'MAIN_TICKER';
-        const templateName = category.template_name || `TICKER_${category.identifier.toUpperCase()}`;
 
         // If no items, return minimal XML structure
         if (!items || items.length === 0) {
@@ -47,6 +46,8 @@ const generateTickerXML = async (items, categoryId) => {
                 }
             });
         };
+
+        const templateName = category.template_name || `TICKER_${category.identifier.toUpperCase()}`;
 
         // Generate XML content with items
         return `<?xml version="1.0" encoding="UTF-8"?>

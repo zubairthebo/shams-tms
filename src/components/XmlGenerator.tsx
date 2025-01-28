@@ -32,12 +32,13 @@ export const generateXml = async (categoryId: string) => {
     
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('XML generation error:', errorData);
       throw new Error(errorData.error || 'Failed to save XML');
     }
     
     return response.json();
   } catch (error) {
-    console.error('Error saving XML:', error);
+    console.error('Error in generateXml:', error);
     throw error;
   }
 };
@@ -74,6 +75,7 @@ export const XmlGenerator = ({ items, categoryId }: { items: NewsItem[], categor
           : `Files saved successfully`,
       });
     } catch (error) {
+      console.error('XML generation error:', error);
       toast({
         title: language === 'ar' ? "خطأ" : "Error",
         description: language === 'ar' 
