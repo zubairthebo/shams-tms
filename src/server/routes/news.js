@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../auth.js';
 import dbPool from '../db/index.js';
-import { saveXML } from '../xmlGenerator.js';
+import { saveXML } from './xmlGenerator.js';
 
 const router = express.Router();
 
@@ -63,6 +63,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { text } = req.body;
 
+        // First check if the news item exists
         const [newsItem] = await dbPool.query(
             'SELECT * FROM news_items WHERE id = ?',
             [id]
@@ -102,6 +103,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
 
+        // First check if the news item exists and get its category
         const [newsItem] = await dbPool.query(
             'SELECT * FROM news_items WHERE id = ?',
             [id]
@@ -113,6 +115,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
 
         const categoryId = newsItem[0].category_id;
 
+        // Delete the news item
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
 
         // Generate new XML for this category
