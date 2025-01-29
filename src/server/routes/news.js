@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../auth.js';
 import dbPool from '../db/index.js';
-import { saveXML } from './xmlGenerator.js';
+import { saveXML } from '../xmlGenerator.js';
 
 const router = express.Router();
 
@@ -28,6 +28,16 @@ router.get('/news', authenticateToken, async (req, res) => {
 router.post('/news', authenticateToken, async (req, res) => {
     try {
         const { text, category } = req.body;
+        
+        // Verify category exists first
+        const [categoryExists] = await dbPool.query(
+            'SELECT id FROM categories WHERE id = ?',
+            [category]
+        );
+
+        if (categoryExists.length === 0) {
+            return res.status(404).json({ error: 'Category not found' });
+        }
         
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
@@ -114,6 +124,16 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
         }
 
         const categoryId = newsItem[0].category_id;
+
+        // Verify the category still exists
+        const [categoryExists] = await dbPool.query(
+            'SELECT id FROM categories WHERE id = ?',
+            [categoryId]
+        );
+
+        if (categoryExists.length === 0) {
+            return res.status(404).json({ error: 'Category not found' });
+        }
 
         // Delete the news item
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);

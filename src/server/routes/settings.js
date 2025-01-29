@@ -37,22 +37,28 @@ router.get('/settings', async (req, res) => {
                 snapchat_url as snapchat,
                 threads_url as threads
             FROM settings 
-            WHERE id = 1
+            LIMIT 1
         `);
-        res.json(settings[0] || {
-            companyName: 'ShamsTV',
-            logo: '',
-            website: 'https://shams.tv',
-            email: 'info@shams.tv',
-            facebook: '',
-            twitter: '',
-            instagram: '',
-            linkedin: '',
-            youtube: '',
-            tiktok: '',
-            snapchat: '',
-            threads: ''
-        });
+
+        // Return default settings if none found
+        if (!settings || settings.length === 0) {
+            return res.json({
+                companyName: 'ShamsTV',
+                logo: '',
+                website: 'https://shams.tv',
+                email: 'info@shams.tv',
+                facebook: '',
+                twitter: '',
+                instagram: '',
+                linkedin: '',
+                youtube: '',
+                tiktok: '',
+                snapchat: '',
+                threads: ''
+            });
+        }
+
+        res.json(settings[0]);
     } catch (error) {
         console.error('Error fetching settings:', error);
         res.status(500).json({ error: 'Failed to fetch settings' });
