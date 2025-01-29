@@ -12,7 +12,7 @@ router.get('/news', authenticateToken, async (req, res) => {
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                c.identifier as category
+                n.category_id as category
             FROM news_items n 
             LEFT JOIN categories c ON n.category_id = c.id
             ORDER BY n.created_at DESC
@@ -32,44 +32,41 @@ router.post('/news', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Text and category are required' });
         }
 
-        // Get category ID from identifier
+        // Category ID is now the same as the identifier
         const [categoryResult] = await dbPool.query(
-            'SELECT id FROM categories WHERE identifier = ?',
+            'SELECT id FROM categories WHERE id = ?',
             [category]
         );
 
         if (categoryResult.length === 0) {
             return res.status(404).json({ error: 'Category not found' });
         }
-
-        const categoryId = categoryResult[0].id;
         
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
 
         await dbPool.query(
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
-            [newsId, text, categoryId, req.user.id]
+            [newsId, text, category, req.user.id]
         );
 
         // Generate new XML for this category
-        await saveXML({ body: { categoryId }, user: req.user }, res);
+        await saveXML({ body: { categoryId: category }, user: req.user }, res);
 
         const [insertedItem] = await dbPool.query(`
             SELECT 
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                c.identifier as category
+                n.category_id as category
             FROM news_items n 
-            JOIN categories c ON n.category_id = c.id
             WHERE n.id = ?
         `, [newsId]);
 
         res.status(201).json(insertedItem[0]);
     } catch (error) {
         console.error('Error creating news:', error);
-        res.status(500).json({ error: 'Failed to create news item' });
+        res.status(500).json({ error: 'Failed to create news item', details: error.message });
     }
 });
 
