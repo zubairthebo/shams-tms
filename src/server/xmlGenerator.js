@@ -28,7 +28,7 @@ const generateTickerXML = async (items, categoryId) => {
         if (!items || items.length === 0) {
             return `<?xml version="1.0" encoding="UTF-8"?>
 <tickerfeed version="2.4">
-<playlist type="flipping_carousel" name="mainSceneName" target="carousel">
+<playlist type="flipping_carousel" name="${mainSceneName}" target="carousel">
 </playlist>
 </tickerfeed>`;
         }
@@ -47,7 +47,7 @@ const generateTickerXML = async (items, categoryId) => {
             });
         };
 
-        const templateName = category.template_name || `TICKER_${category.identifier.toUpperCase()}`;
+        const templateName = category.template_name || `TICKER_${category.id.toUpperCase()}`;
 
         // Generate XML content with items
         return `<?xml version="1.0" encoding="UTF-8"?>
@@ -90,33 +90,27 @@ export const saveXML = async (req, res) => {
             return res.status(403).json({ error: 'Unauthorized category access' });
         }
 
-        // Get category identifier for filename
-        const [categories] = await pool.execute(
-            'SELECT identifier FROM categories WHERE id = ?',
-            [categoryId]
-        );
-
-        if (!categories.length) {
-            return res.status(404).json({ error: 'Category not found' });
-        }
-
-        const category = categories[0];
-        const filename = `${category.identifier}.xml`;
-        const filepath = path.join(XML_DIR, filename);
-
         // Get items for this specific category
         const [items] = await pool.execute(
-            'SELECT * FROM news_items WHERE category_id = ? ORDER BY timestamp DESC',
+            'SELECT * FROM news_items WHERE category_id = ? ORDER BY created_at DESC',
             [categoryId]
         );
 
         const xmlContent = await generateTickerXML(items, categoryId);
+        
+        // Ensure XML directory exists
+        if (!fs.existsSync(XML_DIR)) {
+            fs.mkdirSync(XML_DIR, { recursive: true });
+        }
+        
+        const filename = `${categoryId}.xml`;
+        const filepath = path.join(XML_DIR, filename);
         fs.writeFileSync(filepath, xmlContent);
         
-        res.json({ message: 'XML saved successfully', filename });
+        return res.json({ message: 'XML saved successfully', filename });
     } catch (error) {
         console.error('Error saving XML:', error);
-        res.status(500).json({ error: 'Failed to save XML', details: error.message });
+        return res.status(500).json({ error: 'Failed to save XML', details: error.message });
     }
 };
 

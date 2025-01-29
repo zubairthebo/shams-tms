@@ -14,7 +14,6 @@ router.get('/news', authenticateToken, async (req, res) => {
                 n.created_at as timestamp,
                 n.category_id as category
             FROM news_items n 
-            LEFT JOIN categories c ON n.category_id = c.id
             ORDER BY n.created_at DESC
         `);
         res.json(rows);
@@ -32,7 +31,7 @@ router.post('/news', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Text and category are required' });
         }
 
-        // Category ID is now the same as the identifier
+        // Check if category exists
         const [categoryResult] = await dbPool.query(
             'SELECT id FROM categories WHERE id = ?',
             [category]
@@ -45,14 +44,13 @@ router.post('/news', authenticateToken, async (req, res) => {
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
 
+        // Insert news item
         await dbPool.query(
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
             [newsId, text, category, req.user.id]
         );
 
-        // Generate new XML for this category
-        await saveXML({ body: { categoryId: category }, user: req.user }, res);
-
+        // Get the inserted item
         const [insertedItem] = await dbPool.query(`
             SELECT 
                 n.id,
@@ -62,6 +60,15 @@ router.post('/news', authenticateToken, async (req, res) => {
             FROM news_items n 
             WHERE n.id = ?
         `, [newsId]);
+
+        // Generate XML after successful insertion
+        await saveXML({ 
+            body: { categoryId: category }, 
+            user: req.user 
+        }, {
+            json: () => {}, // Mock response object for XML generation
+            status: () => ({ json: () => {} })
+        });
 
         res.status(201).json(insertedItem[0]);
     } catch (error) {
