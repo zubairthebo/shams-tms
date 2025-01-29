@@ -7,9 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Clock, LogOut, Languages } from "lucide-react";
 import { format } from "date-fns";
 
-// Get the API URL from environment or default to localhost
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 export const Header = () => {
   const { user, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
@@ -18,9 +15,7 @@ export const Header = () => {
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/settings`, {
-        credentials: 'include'
-      });
+      const response = await fetch('http://localhost:3000/api/settings');
       if (!response.ok) throw new Error('Failed to fetch settings');
       return response.json();
     }
