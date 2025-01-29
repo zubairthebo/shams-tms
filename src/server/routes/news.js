@@ -53,10 +53,12 @@ router.post('/news', authenticateToken, async (req, res) => {
             [newsId, text, categoryId, req.user.id]
         );
 
+        // Generate XML after inserting the news item
         try {
-            await saveXML({ body: { categoryId: category }, user: req.user }, res);
+            await saveXML({ body: { categoryId: category }, user: req.user });
         } catch (xmlError) {
             console.error('XML generation error:', xmlError);
+            // Continue with the response even if XML generation fails
         }
 
         const [insertedItem] = await dbPool.query(`
@@ -96,10 +98,12 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
             [text, id]
         );
 
+        // Generate XML after updating the news item
         try {
-            await saveXML({ body: { categoryId: newsItem[0].category }, user: req.user }, res);
+            await saveXML({ body: { categoryId: newsItem[0].category }, user: req.user });
         } catch (xmlError) {
             console.error('XML generation error:', xmlError);
+            // Continue with the response even if XML generation fails
         }
 
         const [updatedItem] = await dbPool.query(`
@@ -137,10 +141,12 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
 
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
 
+        // Generate XML after deleting the news item
         try {
-            await saveXML({ body: { categoryId: category }, user: req.user }, res);
+            await saveXML({ body: { categoryId: category }, user: req.user });
         } catch (xmlError) {
             console.error('XML generation error:', xmlError);
+            // Continue with the response even if XML generation fails
         }
 
         res.json({ message: 'News item deleted successfully' });
