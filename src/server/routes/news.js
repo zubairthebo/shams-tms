@@ -12,8 +12,9 @@ router.get('/news', authenticateToken, async (req, res) => {
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                n.category_id as category
+                c.identifier as category
             FROM news_items n 
+            JOIN categories c ON n.category_id = c.id
             ORDER BY n.created_at DESC
         `);
         res.json(rows);
@@ -31,15 +32,17 @@ router.post('/news', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Text and category are required' });
         }
 
-        // Check if category exists
+        // Get category ID from identifier
         const [categoryResult] = await dbPool.query(
-            'SELECT id FROM categories WHERE id = ?',
+            'SELECT id FROM categories WHERE identifier = ?',
             [category]
         );
 
         if (categoryResult.length === 0) {
             return res.status(404).json({ error: 'Category not found' });
         }
+
+        const categoryId = categoryResult[0].id;
         
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
@@ -47,28 +50,25 @@ router.post('/news', authenticateToken, async (req, res) => {
         // Insert news item
         await dbPool.query(
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
-            [newsId, text, category, req.user.id]
+            [newsId, text, categoryId, req.user.id]
         );
 
-        // Get the inserted item
+        try {
+            await saveXML({ body: { categoryId: category }, user: req.user }, res);
+        } catch (xmlError) {
+            console.error('XML generation error:', xmlError);
+        }
+
         const [insertedItem] = await dbPool.query(`
             SELECT 
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                n.category_id as category
+                c.identifier as category
             FROM news_items n 
+            JOIN categories c ON n.category_id = c.id
             WHERE n.id = ?
         `, [newsId]);
-
-        // Generate XML after successful insertion
-        await saveXML({ 
-            body: { categoryId: category }, 
-            user: req.user 
-        }, {
-            json: () => {}, // Mock response object for XML generation
-            status: () => ({ json: () => {} })
-        });
 
         res.status(201).json(insertedItem[0]);
     } catch (error) {
@@ -83,7 +83,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         const { text } = req.body;
 
         const [newsItem] = await dbPool.query(
-            'SELECT * FROM news_items WHERE id = ?',
+            'SELECT n.*, c.identifier as category FROM news_items n JOIN categories c ON n.category_id = c.id WHERE n.id = ?',
             [id]
         );
 
@@ -96,8 +96,11 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
             [text, id]
         );
 
-        // Generate new XML for this category
-        await saveXML({ body: { categoryId: newsItem[0].category_id }, user: req.user }, res);
+        try {
+            await saveXML({ body: { categoryId: newsItem[0].category }, user: req.user }, res);
+        } catch (xmlError) {
+            console.error('XML generation error:', xmlError);
+        }
 
         const [updatedItem] = await dbPool.query(`
             SELECT 
@@ -122,7 +125,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
 
         const [newsItem] = await dbPool.query(
-            'SELECT * FROM news_items WHERE id = ?',
+            'SELECT n.*, c.identifier as category FROM news_items n JOIN categories c ON n.category_id = c.id WHERE n.id = ?',
             [id]
         );
 
@@ -130,16 +133,14 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'News item not found' });
         }
 
-        const categoryId = newsItem[0].category_id;
+        const category = newsItem[0].category;
 
-        // Delete the news item
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
 
-        // Try to generate new XML for this category
         try {
-            await saveXML({ body: { categoryId }, user: req.user }, res);
-        } catch (error) {
-            console.error('Error generating XML after delete:', error);
+            await saveXML({ body: { categoryId: category }, user: req.user }, res);
+        } catch (xmlError) {
+            console.error('XML generation error:', xmlError);
         }
 
         res.json({ message: 'News item deleted successfully' });

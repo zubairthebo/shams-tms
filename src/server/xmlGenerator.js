@@ -13,7 +13,7 @@ const pool = mysql.createPool({
 const generateTickerXML = async (items, categoryId) => {
     try {
         const [categories] = await pool.execute(
-            'SELECT * FROM categories WHERE id = ?',
+            'SELECT * FROM categories WHERE identifier = ?',
             [categoryId]
         );
 
@@ -47,7 +47,7 @@ const generateTickerXML = async (items, categoryId) => {
             });
         };
 
-        const templateName = category.template_name || `TICKER_${category.id.toUpperCase()}`;
+        const templateName = category.template_name || `TICKER_${categoryId.toUpperCase()}`;
 
         // Generate XML content with items
         return `<?xml version="1.0" encoding="UTF-8"?>
@@ -79,13 +79,25 @@ export const saveXML = async (req, res) => {
             return res.status(400).json({ error: 'Missing category ID' });
         }
 
+        // Get category ID from identifier
+        const [categoryResult] = await pool.execute(
+            'SELECT id FROM categories WHERE identifier = ?',
+            [categoryId]
+        );
+
+        if (categoryResult.length === 0) {
+            return res.status(400).json({ error: 'Category not found' });
+        }
+
+        const category = categoryResult[0];
+
         // Check user permissions
         const [userCategories] = await pool.execute(
-            'SELECT category_id FROM user_categories WHERE user_id = ?',
+            'SELECT c.identifier FROM categories c JOIN user_categories uc ON c.id = uc.category_id WHERE uc.user_id = ?',
             [req.user.id]
         );
 
-        const allowedCategories = userCategories.map(uc => uc.category_id);
+        const allowedCategories = userCategories.map(uc => uc.identifier);
         if (req.user.role !== 'admin' && !allowedCategories.includes(categoryId)) {
             return res.status(403).json({ error: 'Unauthorized category access' });
         }
@@ -93,7 +105,7 @@ export const saveXML = async (req, res) => {
         // Get items for this specific category
         const [items] = await pool.execute(
             'SELECT * FROM news_items WHERE category_id = ? ORDER BY created_at DESC',
-            [categoryId]
+            [category.id]
         );
 
         const xmlContent = await generateTickerXML(items, categoryId);
