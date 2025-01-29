@@ -5,7 +5,6 @@ import { saveXML } from '../xmlGenerator.js';
 
 const router = express.Router();
 
-// Get news items
 router.get('/news', authenticateToken, async (req, res) => {
     try {
         const [rows] = await dbPool.query(`
@@ -24,7 +23,6 @@ router.get('/news', authenticateToken, async (req, res) => {
     }
 });
 
-// Create news item
 router.post('/news', authenticateToken, async (req, res) => {
     try {
         const { text, category } = req.body;
@@ -67,7 +65,6 @@ router.post('/news', authenticateToken, async (req, res) => {
     }
 });
 
-// Update news item
 router.put('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -108,12 +105,11 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// Delete news item
 router.delete('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // First check if the news item exists and get its category
+        // First check if the news item exists
         const [newsItem] = await dbPool.query(
             'SELECT * FROM news_items WHERE id = ?',
             [id]
@@ -125,14 +121,16 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
 
         const categoryId = newsItem[0].category_id;
 
-        // Verify the category still exists
+        // Verify the category exists
         const [categoryExists] = await dbPool.query(
             'SELECT id FROM categories WHERE id = ?',
             [categoryId]
         );
 
         if (categoryExists.length === 0) {
-            return res.status(404).json({ error: 'Category not found' });
+            // If category doesn't exist, we should still delete the news item
+            await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
+            return res.json({ message: 'News item deleted successfully' });
         }
 
         // Delete the news item
