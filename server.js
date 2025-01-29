@@ -19,10 +19,12 @@ const __dirname = dirname(__filename);
 
 const app = express();
 
+// Updated CORS configuration
 app.use(cors({
-  origin: '*',
+  origin: ['http://localhost:5173', 'https://8736c41e-d11e-4b53-a408-04bc8198aeb2.lovableproject.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 app.use(express.json());
