@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../auth.js';
 import dbPool from '../db/index.js';
-import { generateCategoryXML } from '../utils/xmlGenerator.js';
+import { saveXML } from '../xmlGenerator.js';
 
 const router = express.Router();
 
@@ -38,7 +38,7 @@ router.post('/news', authenticateToken, async (req, res) => {
         );
 
         // Generate new XML for this category
-        await generateCategoryXML(category);
+        await saveXML({ body: { categoryId: category }, user: req.user }, res);
 
         const [insertedItem] = await dbPool.query(`
             SELECT 
@@ -78,7 +78,7 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         );
 
         // Generate new XML for this category
-        await generateCategoryXML(newsItem[0].category_id);
+        await saveXML({ body: { categoryId: newsItem[0].category_id }, user: req.user }, res);
 
         const [updatedItem] = await dbPool.query(`
             SELECT 
@@ -116,7 +116,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
 
         // Generate new XML for this category
-        await generateCategoryXML(categoryId);
+        await saveXML({ body: { categoryId }, user: req.user }, res);
 
         res.json({ message: 'News item deleted successfully' });
     } catch (error) {

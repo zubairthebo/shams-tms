@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../auth.js';
 import dbPool from '../db/index.js';
-import { generateCategoryXML } from '../utils/xmlGenerator.js';
+import { saveXML } from '../xmlGenerator.js';
 
 const router = express.Router();
 
@@ -52,7 +52,7 @@ router.post('/categories/:identifier', authenticateToken, async (req, res) => {
         `, [identifier, ar, en, mainSceneName || 'MAIN_TICKER', openerTemplateName || 'TICKER_START', templateName || 'TICKER']);
 
         // Create empty XML file for new category
-        await generateCategoryXML(identifier);
+        await saveXML({ body: { categoryId: result.insertId }, user: req.user }, res);
         
         res.status(201).json({ message: 'Category created successfully', id: result.insertId });
     } catch (error) {
