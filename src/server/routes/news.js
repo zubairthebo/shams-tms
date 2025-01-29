@@ -27,9 +27,14 @@ router.post('/news', authenticateToken, async (req, res) => {
     try {
         const { text, category } = req.body;
         
+        // First verify that we have all required fields
+        if (!text || !category) {
+            return res.status(400).json({ error: 'Text and category are required' });
+        }
+
         // Verify category exists first
         const [categoryExists] = await dbPool.query(
-            'SELECT id FROM categories WHERE id = ?',
+            'SELECT identifier FROM categories WHERE identifier = ?',
             [category]
         );
 
@@ -121,23 +126,15 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
 
         const categoryId = newsItem[0].category_id;
 
-        // Verify the category exists
-        const [categoryExists] = await dbPool.query(
-            'SELECT id FROM categories WHERE id = ?',
-            [categoryId]
-        );
-
-        if (categoryExists.length === 0) {
-            // If category doesn't exist, we should still delete the news item
-            await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
-            return res.json({ message: 'News item deleted successfully' });
-        }
-
         // Delete the news item
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
 
-        // Generate new XML for this category
-        await saveXML({ body: { categoryId }, user: req.user }, res);
+        // Try to generate new XML for this category, but don't fail if category doesn't exist
+        try {
+            await saveXML({ body: { categoryId }, user: req.user }, res);
+        } catch (error) {
+            console.error('Error generating XML after delete:', error);
+        }
 
         res.json({ message: 'News item deleted successfully' });
     } catch (error) {
