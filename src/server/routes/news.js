@@ -12,8 +12,9 @@ router.get('/news', authenticateToken, async (req, res) => {
                 n.id,
                 n.text,
                 n.created_at as timestamp,
-                n.category_id as category
+                c.identifier as category
             FROM news_items n 
+            LEFT JOIN categories c ON n.category_id = c.id
             ORDER BY n.created_at DESC
         `);
         res.json(rows);
@@ -27,40 +28,42 @@ router.post('/news', authenticateToken, async (req, res) => {
     try {
         const { text, category } = req.body;
         
-        // First verify that we have all required fields
         if (!text || !category) {
             return res.status(400).json({ error: 'Text and category are required' });
         }
 
-        // Verify category exists first
-        const [categoryExists] = await dbPool.query(
-            'SELECT identifier FROM categories WHERE identifier = ?',
+        // Get category ID from identifier
+        const [categoryResult] = await dbPool.query(
+            'SELECT id FROM categories WHERE identifier = ?',
             [category]
         );
 
-        if (categoryExists.length === 0) {
+        if (categoryResult.length === 0) {
             return res.status(404).json({ error: 'Category not found' });
         }
+
+        const categoryId = categoryResult[0].id;
         
         const [uuidResult] = await dbPool.query('SELECT UUID() as uuid');
         const newsId = uuidResult[0].uuid;
 
         await dbPool.query(
             'INSERT INTO news_items (id, text, category_id, created_by) VALUES (?, ?, ?, ?)',
-            [newsId, text, category, req.user.id]
+            [newsId, text, categoryId, req.user.id]
         );
 
         // Generate new XML for this category
-        await saveXML({ body: { categoryId: category }, user: req.user }, res);
+        await saveXML({ body: { categoryId }, user: req.user }, res);
 
         const [insertedItem] = await dbPool.query(`
             SELECT 
-                id,
-                text,
-                created_at as timestamp,
-                category_id as category
-            FROM news_items 
-            WHERE id = ?
+                n.id,
+                n.text,
+                n.created_at as timestamp,
+                c.identifier as category
+            FROM news_items n 
+            JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
         `, [newsId]);
 
         res.status(201).json(insertedItem[0]);
@@ -75,7 +78,6 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { text } = req.body;
 
-        // First check if the news item exists
         const [newsItem] = await dbPool.query(
             'SELECT * FROM news_items WHERE id = ?',
             [id]
@@ -95,12 +97,13 @@ router.put('/news/:id', authenticateToken, async (req, res) => {
 
         const [updatedItem] = await dbPool.query(`
             SELECT 
-                id,
-                text,
-                created_at as timestamp,
-                category_id as category
-            FROM news_items 
-            WHERE id = ?
+                n.id,
+                n.text,
+                n.created_at as timestamp,
+                c.identifier as category
+            FROM news_items n 
+            JOIN categories c ON n.category_id = c.id
+            WHERE n.id = ?
         `, [id]);
 
         res.json(updatedItem[0]);
@@ -114,7 +117,6 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // First check if the news item exists
         const [newsItem] = await dbPool.query(
             'SELECT * FROM news_items WHERE id = ?',
             [id]
@@ -129,7 +131,7 @@ router.delete('/news/:id', authenticateToken, async (req, res) => {
         // Delete the news item
         await dbPool.query('DELETE FROM news_items WHERE id = ?', [id]);
 
-        // Try to generate new XML for this category, but don't fail if category doesn't exist
+        // Try to generate new XML for this category
         try {
             await saveXML({ body: { categoryId }, user: req.user }, res);
         } catch (error) {
