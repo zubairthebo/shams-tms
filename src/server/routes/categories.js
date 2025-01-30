@@ -7,9 +7,10 @@ const router = express.Router();
 
 router.get('/categories', async (req, res) => {
     try {
+        console.log('Fetching categories...');
         const [categories] = await dbPool.query(`
             SELECT 
-                identifier,
+                id as identifier,
                 name_ar as ar,
                 name_en as en,
                 main_scene_name as mainSceneName,
@@ -17,6 +18,8 @@ router.get('/categories', async (req, res) => {
                 template_name as templateName
             FROM categories
         `);
+        
+        console.log('Categories fetched:', categories);
         
         const formattedCategories = categories.reduce((acc, category) => {
             const { identifier, ...rest } = category;
@@ -26,8 +29,11 @@ router.get('/categories', async (req, res) => {
 
         res.json(formattedCategories);
     } catch (error) {
-        console.error('Error fetching categories:', error);
-        res.status(500).json({ error: 'Failed to fetch categories' });
+        console.error('Error in /categories route:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch categories',
+            details: error.message 
+        });
     }
 });
 

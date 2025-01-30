@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 }).then(response => {
                     if (!response.ok) {
+                        console.log('Token validation response:', response.status);
                         if (response.status === 403 || response.status === 401) {
                             console.log('Session expired or invalid, clearing auth data');
                             clearAuthData();
@@ -51,18 +52,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             });
                         }
                     } else {
-                        setUser(JSON.parse(userData));
+                        const parsedUser = JSON.parse(userData);
+                        console.log('Setting user data:', parsedUser);
+                        setUser(parsedUser);
                     }
                 }).catch(error => {
                     console.error('Auth verification error:', error);
                     clearAuthData();
+                }).finally(() => {
+                    setIsLoading(false);
                 });
             } catch (error) {
                 console.error('Error parsing stored user data:', error);
                 clearAuthData();
+                setIsLoading(false);
             }
+        } else {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     }, []);
 
     const login = async (username: string, password: string) => {
@@ -77,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const data = await response.json();
+        console.log('Login response:', data);
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);

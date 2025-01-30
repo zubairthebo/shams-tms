@@ -7,6 +7,9 @@ export const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
+    console.log('Auth header:', authHeader);
+    console.log('Token:', token);
+
     if (!token) {
         console.log('No token provided');
         return res.status(401).json({ error: 'Access denied - No token provided' });
@@ -14,6 +17,7 @@ export const authenticateToken = async (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+        console.log('Decoded token:', decoded);
         
         // Get fresh user data from database
         const [users] = await dbPool.query(
@@ -30,7 +34,7 @@ export const authenticateToken = async (req, res, next) => {
 
         // Get assigned categories
         const [categories] = await dbPool.query(`
-            SELECT c.identifier 
+            SELECT c.id as identifier 
             FROM categories c 
             INNER JOIN user_categories uc ON c.id = uc.category_id 
             WHERE uc.user_id = ?
